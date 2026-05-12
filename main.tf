@@ -1,8 +1,9 @@
 terraform {
   required_providers {
     kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = "~> 1.14.0"
+      # alekc/kubectl is the maintained fork of gavinbunney/kubectl. The original is unmaintained now.
+      source  = "alekc/kubectl"
+      version = "~> 2.1"
     }
   }
 }

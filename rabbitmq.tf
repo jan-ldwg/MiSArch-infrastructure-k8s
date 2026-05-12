@@ -25,6 +25,7 @@ resource "helm_release" "rabbitmq" {
   ]
 
   values = [
+    local.bitnami_legacy_rabbitmq_image_overrides,
     <<-EOF
     image:
       tag: "${var.RABBITMQ_VERSION}"

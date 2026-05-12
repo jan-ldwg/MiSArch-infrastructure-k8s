@@ -5,6 +5,7 @@ resource "helm_release" "misarch_address_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.address_db_service_name}"
     image:
@@ -15,7 +16,10 @@ resource "helm_release" "misarch_address_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_address_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -27,6 +31,7 @@ resource "helm_release" "misarch_catalog_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.catalog_db_service_name}"
     image:
@@ -37,7 +42,10 @@ resource "helm_release" "misarch_catalog_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_catalog_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -48,6 +56,7 @@ resource "helm_release" "misarch_discount_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.discount_db_service_name}"
     image:
@@ -58,7 +67,10 @@ resource "helm_release" "misarch_discount_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_discount_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -70,6 +82,7 @@ resource "helm_release" "misarch_notification_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.notification_db_service_name}"
     image:
@@ -80,7 +93,10 @@ resource "helm_release" "misarch_notification_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_notification_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -92,6 +108,7 @@ resource "helm_release" "misarch_return_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.return_db_service_name}"
     image:
@@ -102,7 +119,10 @@ resource "helm_release" "misarch_return_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_return_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -114,6 +134,7 @@ resource "helm_release" "misarch_shipment_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.shipment_db_service_name}"
     image:
@@ -124,7 +145,10 @@ resource "helm_release" "misarch_shipment_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_shipment_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -136,6 +160,7 @@ resource "helm_release" "misarch_tax_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.tax_db_service_name}"
     image:
@@ -146,7 +171,10 @@ resource "helm_release" "misarch_tax_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_tax_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -158,6 +186,7 @@ resource "helm_release" "misarch_user_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.user_db_service_name}"
     image:
@@ -168,7 +197,10 @@ resource "helm_release" "misarch_user_db" {
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_user_db_password.result}"
     metrics:
-      enabled: true
+      # Disabled: bitnamilegacy/postgres-exporter expects the postgres
+      # superuser password file, but `auth.enablePostgresUser: false` means
+      # that secret is never created and the exporter crash-loops.
+      enabled: false
     EOF
   ]
 }
@@ -180,6 +212,7 @@ resource "helm_release" "misarch_keycloak_db" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.keycloak_db_service_name}"
     image:

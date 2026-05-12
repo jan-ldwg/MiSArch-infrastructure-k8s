@@ -82,6 +82,47 @@ resource "kubernetes_deployment" "keycloak" {
               name = local.keycloak_env_vars_configmap
             }
           }
+
+          # Bootstrap admin credentials. Keycloak only creates the user on a
+          # fresh DB; if you change these later, run `kc.sh bootstrap-admin
+          # user` inside the pod or wipe the keycloak-db PVC.
+          env {
+            name = "KC_BOOTSTRAP_ADMIN_USERNAME"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_auth.metadata[0].name
+                key  = "adminUser"
+              }
+            }
+          }
+          env {
+            name = "KC_BOOTSTRAP_ADMIN_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_auth.metadata[0].name
+                key  = "adminPassword"
+              }
+            }
+          }
+          # Legacy env-var names for Keycloak <26; harmless on 26+ (ignored).
+          env {
+            name = "KEYCLOAK_ADMIN"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_auth.metadata[0].name
+                key  = "adminUser"
+              }
+            }
+          }
+          env {
+            name = "KEYCLOAK_ADMIN_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_auth.metadata[0].name
+                key  = "adminPassword"
+              }
+            }
+          }
         }
 
         container {

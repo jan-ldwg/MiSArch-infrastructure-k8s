@@ -10,6 +10,7 @@ resource "helm_release" "minio" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_minio_image_overrides,
     <<-EOF
     image:
       tag: "${var.MINIO_VERSION}"

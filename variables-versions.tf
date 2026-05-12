@@ -168,3 +168,8 @@ variable "MISARCH_CHAOSTOOLKIT_EXECUTOR_VERSION" {
   type    = string
   default = "main"
 }
+
+variable "MISARCH_TESTDATA_VERSION" {
+  type    = string
+  default = "main"
+}

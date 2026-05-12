@@ -6,6 +6,7 @@ resource "helm_release" "redis" {
   namespace  = local.namespace
 
   values = [
+    local.bitnami_legacy_redis_image_overrides,
     <<-EOF
   auth:
     password: "${random_password.redis.result}"

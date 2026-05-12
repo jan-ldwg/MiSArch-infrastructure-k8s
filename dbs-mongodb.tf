@@ -19,21 +19,21 @@ locals {
 resource "helm_release" "misarch_inventory_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_inventory]
   name       = local.inventory_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.inventory_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -55,21 +55,21 @@ resource "kubernetes_secret" "mongodb_credentials_inventory" {
 resource "helm_release" "misarch_invoice_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_invoice]
   name       = local.invoice_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.invoice_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -91,21 +91,21 @@ resource "kubernetes_secret" "mongodb_credentials_invoice" {
 resource "helm_release" "misarch_media_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_media]
   name       = local.media_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.media_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -127,21 +127,21 @@ resource "kubernetes_secret" "mongodb_credentials_media" {
 resource "helm_release" "misarch_order_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_order]
   name       = local.order_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.order_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -163,21 +163,21 @@ resource "kubernetes_secret" "mongodb_credentials_order" {
 resource "helm_release" "misarch_payment_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_payment]
   name       = local.payment_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.payment_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -199,21 +199,21 @@ resource "kubernetes_secret" "mongodb_credentials_payment" {
 resource "helm_release" "misarch_review_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_review]
   name       = local.review_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.review_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -235,21 +235,21 @@ resource "kubernetes_secret" "mongodb_credentials_review" {
 resource "helm_release" "misarch_shoppingcart_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_shoppingcart]
   name       = local.shoppingcart_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.shoppingcart_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
@@ -271,21 +271,21 @@ resource "kubernetes_secret" "mongodb_credentials_shoppingcart" {
 resource "helm_release" "misarch_wishlist_db" {
   depends_on = [kubernetes_secret.mongodb_credentials_wishlist]
   name       = local.wishlist_db_service_name
-  repository = "oci://registry-1.docker.io/bitnamicharts"
+  repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
   namespace  = local.namespace
 
   values = [
     <<-EOF
     fullnameOverride: "${local.wishlist_db_service_name}"
-    architecture: "replicaset"
     image:
       tag: "${var.MONGODB_VERSION}"
-    auth:
-      enabled: false
-    metrics:
-      enabled: true
-    resourcesPreset: "${var.MONGODB_RESOURCE_PRESET}"
+    storage:
+      requestedSize: "8Gi"
+    service:
+      # misarch services hardcode `<name>-headless` as their mongo DNS target
+      # (legacy from the Bitnami chart's headless-service naming convention).
+      headlessServiceSuffix: headless
     EOF
   ]
 }
