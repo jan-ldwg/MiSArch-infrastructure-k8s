@@ -18,6 +18,25 @@ resource "kubernetes_service" "misarch_experiment_executor" {
   }
 }
 
+resource "kubernetes_persistent_volume_claim" "misarch_experiment_executor_pvc" {
+  metadata {
+    name      = "${local.misarch_experiment_executor_service_name}-pvc"
+    namespace = local.namespace
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = "1Gi"
+      }
+    }
+  }
+
+  wait_until_bound = false  # <- PVC wird erst Bound wenn Deployment läuft
+}
+
+
+
 resource "kubernetes_deployment" "misarch_experiment_executor" {
   metadata {
 
@@ -25,6 +44,9 @@ resource "kubernetes_deployment" "misarch_experiment_executor" {
     labels    = merge(local.base_misarch_labels, local.misarch_experiment_executor_specific_labels)
     namespace = local.namespace
   }
+  depends_on = [
+    kubernetes_persistent_volume_claim.misarch_experiment_executor_pvc
+  ]
 
   spec {
     replicas = 1
@@ -82,21 +104,6 @@ resource "kubernetes_deployment" "misarch_experiment_executor" {
             claim_name = kubernetes_persistent_volume_claim.misarch_experiment_executor_pvc.metadata[0].name
           }
         }
-      }
-    }
-  }
-}
-
-resource "kubernetes_persistent_volume_claim" "misarch_experiment_executor_pvc" {
-  metadata {
-    name      = "${local.misarch_experiment_executor_service_name}-pvc"
-    namespace = local.namespace
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "1Gi"
       }
     }
   }
