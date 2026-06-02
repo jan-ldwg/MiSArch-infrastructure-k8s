@@ -26,7 +26,32 @@ resource "kubernetes_ingress_v1" "misarch" {
               }
             }
           }
-          path = "/"
+          path      = "/"
+          path_type = "Prefix"
+        }
+        path {
+          backend {
+            service {
+              name = local.misarch_experiment_executor_frontend_service_name
+              port {
+                number = 80
+              }
+            }
+          }
+          path      = "/frontend"
+          path_type = "Prefix"
+        }
+        path {
+          backend {
+            service {
+              name = local.misarch_experiment_executor_service_name
+              port {
+                number = 8888
+              }
+            }
+          }
+          path      = "/experiment"
+          path_type = "Prefix"
         }
       }
     }

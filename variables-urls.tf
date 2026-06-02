@@ -4,10 +4,17 @@ variable "ROOT_DOMAIN" {
   default     = "http://localhost:8080"
 }
 
+data "kubernetes_service" "ingress_lb" {
+  metadata {
+    name      = "ingress-nginx-controller"
+    namespace = "ingress-nginx"
+  }
+}
+
 // Global Domain
 locals {
   // This will likely change in the future. If the backend is not exposed via the internet, this must be set to the localhost port-forward URL.
-  global_domain = "https://misarch-experiment.gropius.dev"
+  global_domain = "http://${data.kubernetes_service.ingress_lb.status[0].load_balancer[0].ingress[0].ip}"
 }
 
 // DBs
