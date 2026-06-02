@@ -34,6 +34,14 @@ resource "helm_release" "misarch_inventory_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    replicaSet:
+      enabled: true
+      name: "repl"
+      key: "cGFzc3dvcmQxMjM="
+      secondaries: 0
+    settings:
+      rootUsername: "root"
+      rootPassword: "${random_password.mongodb_root_password_inventory.result}"
     EOF
   ]
 }
