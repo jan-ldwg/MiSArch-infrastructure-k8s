@@ -8,6 +8,8 @@ resource "helm_release" "redis" {
   values = [
     local.bitnami_legacy_redis_image_overrides,
     <<-EOF
+  global:
+    storageClass: "${local.storage_class_name}"
   auth:
     password: "${random_password.redis.result}"
   # Everything depends on redis being ready quickly, so decrease the preset timelimit and rather let it fail a few times to save some setup time

@@ -6,6 +6,8 @@ resource "helm_release" "influxdb" {
 
   values = [
     <<-EOF
+    persistence:
+      storageClass: "${local.storage_class_name}"
     fullnameOverride: "${local.influxdb_service_name}"
     env:
       - name: DOCKER_INFLUXDB_INIT_MODE

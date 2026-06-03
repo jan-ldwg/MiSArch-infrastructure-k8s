@@ -24,7 +24,8 @@ resource "kubernetes_persistent_volume_claim" "misarch_experiment_executor_pvc" 
     namespace = local.namespace
   }
   spec {
-    access_modes = ["ReadWriteOnce"]
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = local.storage_class_name
     resources {
       requests = {
         storage = "1Gi"

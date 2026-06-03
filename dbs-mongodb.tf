@@ -29,6 +29,7 @@ resource "helm_release" "misarch_inventory_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -73,6 +74,7 @@ resource "helm_release" "misarch_invoice_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -109,6 +111,7 @@ resource "helm_release" "misarch_media_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -145,6 +148,7 @@ resource "helm_release" "misarch_order_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -181,6 +185,7 @@ resource "helm_release" "misarch_payment_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -217,6 +222,7 @@ resource "helm_release" "misarch_review_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -253,6 +259,7 @@ resource "helm_release" "misarch_shoppingcart_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -289,6 +296,7 @@ resource "helm_release" "misarch_wishlist_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
+      className: "${local.storage_class_name}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target

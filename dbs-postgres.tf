@@ -8,6 +8,8 @@ resource "helm_release" "misarch_address_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.address_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -34,6 +36,8 @@ resource "helm_release" "misarch_catalog_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.catalog_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -59,6 +63,8 @@ resource "helm_release" "misarch_discount_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.discount_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -85,6 +91,8 @@ resource "helm_release" "misarch_notification_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.notification_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -111,6 +119,8 @@ resource "helm_release" "misarch_return_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.return_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -137,6 +147,8 @@ resource "helm_release" "misarch_shipment_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.shipment_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -163,6 +175,8 @@ resource "helm_release" "misarch_tax_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.tax_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -189,6 +203,8 @@ resource "helm_release" "misarch_user_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.user_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -215,6 +231,8 @@ resource "helm_release" "misarch_keycloak_db" {
     local.bitnami_legacy_postgresql_image_overrides,
     <<-EOF
     fullnameOverride: "${local.keycloak_db_service_name}"
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:

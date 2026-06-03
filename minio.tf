@@ -12,6 +12,8 @@ resource "helm_release" "minio" {
   values = [
     local.bitnami_legacy_minio_image_overrides,
     <<-EOF
+    global:
+      storageClass: "${local.storage_class_name}"
     image:
       tag: "${var.MINIO_VERSION}"
     commonAnnotations:
