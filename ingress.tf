@@ -1,4 +1,16 @@
+// Ingress controller
+resource "helm_release" "ingress_nginx" {
+  depends_on = [kubernetes_namespace.misarch]
+
+  name       = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  namespace  = local.namespace
+}
+
 resource "kubernetes_ingress_v1" "misarch" {
+  depends_on = [helm_release.ingress_nginx]
+
   metadata {
     name        = local.ingress_name
     namespace   = local.namespace

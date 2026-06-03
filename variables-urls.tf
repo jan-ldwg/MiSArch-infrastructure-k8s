@@ -5,16 +5,19 @@ variable "ROOT_DOMAIN" {
 }
 
 data "kubernetes_service" "ingress_lb" {
+  depends_on = [helm_release.ingress_nginx]
+
   metadata {
     name      = "ingress-nginx-controller"
-    namespace = "ingress-nginx"
+    namespace = local.namespace
   }
 }
 
 // Global Domain
 locals {
   // This will likely change in the future. If the backend is not exposed via the internet, this must be set to the localhost port-forward URL.
-  global_domain = "http://${data.kubernetes_service.ingress_lb.status[0].load_balancer[0].ingress[0].ip}"
+  // The LoadBalancer IP is assigned asynchronously, so it may be null on the first try
+  global_domain = try("http://${data.kubernetes_service.ingress_lb.status[0].load_balancer[0].ingress[0].ip}", var.ROOT_DOMAIN)
 }
 
 // DBs
