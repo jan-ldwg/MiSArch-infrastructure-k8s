@@ -1,0 +1,23 @@
+MiSArch Tier A Resilience Experiment
+====================================
+Profile ID:    3
+Profile:       inventory-slowdown
+Name:          Inventory Slowdown Cascade
+Hypothesis:    3s inbound delay on inventory during peak causes cascading latency without circuit breaking.
+Load:          baseline=50 peak=250 users/s (210s)
+Shop mode:     normal
+Misarch config: profiles/misarch/inventory-slowdown.json
+Chaos config:   profiles/chaos/empty.json
+Exported:      2026-06-09T09:02:46Z
+
+Metrics focus:
+  - influxdb-summary.json: error_ratio, response times, request rates (ok/ko)
+  - Compare peak_requests_per_second and mean_response_time_ms across profiles
+  - executor.log.snippet: Grafana export + fault plugin activity
+  - gatling.log.snippet: BUILD SUCCESSFUL / simulation completion
+
+Suggested refactorings if hypothesis confirmed:
+  - Timeouts + circuit breakers on sync hot path (inventory, payment)
+  - Saga orchestration + outbox + compensation
+  - Durable messaging / DLQ for pub/sub pipeline
+  - Gateway load shedding under spike + compound faults

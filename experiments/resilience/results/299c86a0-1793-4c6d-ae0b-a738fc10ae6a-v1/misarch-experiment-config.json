@@ -1,0 +1,30 @@
+[
+  {
+    "failures": [
+      {
+        "name": "order",
+        "pubSubDeterioration": {
+          "delay": 8000,
+          "delayProbability": 0.7,
+          "errorProbability": 0.5
+        },
+        "serviceInvocationDeterioration": null,
+        "artificialMemoryUsage": null,
+        "artificialCPUUsage": null
+      }
+    ],
+    "pauses": { "before": 75, "after": 60 }
+  },
+  {
+    "failures": [
+      {
+        "name": "order",
+        "pubSubDeterioration": null,
+        "serviceInvocationDeterioration": null,
+        "artificialMemoryUsage": null,
+        "artificialCPUUsage": null
+      }
+    ],
+    "pauses": { "before": 0, "after": 0 }
+  }
+]

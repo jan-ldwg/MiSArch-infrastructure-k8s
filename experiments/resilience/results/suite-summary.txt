@@ -1,0 +1,7 @@
+OK  baseline-spike  2026-06-09T08:54:09Z
+OK  inventory-slowdown  2026-06-09T09:02:51Z
+OK  payment-failure  2026-06-09T09:11:32Z
+OK  pubsub-disruption  2026-06-09T09:19:28Z
+FAIL inventory-kill-oversell  2026-06-09T09:40:41Z
+FAIL retry-storm  2026-06-09T10:41:36Z
+FAIL compound-fault  2026-06-09T12:00:12Z

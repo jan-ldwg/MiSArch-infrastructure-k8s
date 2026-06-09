@@ -1,0 +1,4 @@
+baseline-spike
+inventory-slowdown
+payment-failure
+pubsub-disruption

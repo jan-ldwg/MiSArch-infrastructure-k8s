@@ -1,0 +1,11 @@
+{
+  "testUUID": "96e749eb-3a05-43da-bc56-e3973aee446e",
+  "testVersion": "v1",
+  "resilienceProfile": "baseline-spike",
+  "baselineUsersPerSecond": 50,
+  "peakUsersPerSecond": 250,
+  "exportedAt": "2026-06-09T08:54:03.828852+00:00",
+  "experimentApi": "https://35.246.166.155/experiment",
+  "influxOrg": "misarch",
+  "influxBucket": "gatling"
+}

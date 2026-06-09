@@ -40,3 +40,4 @@ terraform/gcp-dev/backend.gcs.hcl
 
 # Exported experiment results (large CSV/JSON snapshots)
 experiments/**/results/
+.DS_Store

@@ -1,0 +1,1 @@
+{"testUUID":"96e749eb-3a05-43da-bc56-e3973aee446e","testVersion":"v1","testName":"Baseline Flash Sale Spike","loadType":"ScalabilityLoadTest","goals":[{"metric":"max response time","threshold":"5000","color":"red"},{"metric":"mean response time","threshold":"2000","color":"yellow"}],"warmUp":null,"steadyState":null}

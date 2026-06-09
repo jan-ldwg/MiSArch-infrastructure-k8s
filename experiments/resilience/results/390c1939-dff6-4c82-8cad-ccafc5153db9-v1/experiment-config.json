@@ -1,0 +1,1 @@
+{"testUUID":"390c1939-dff6-4c82-8cad-ccafc5153db9","testVersion":"v1","testName":"Payment Hard Failure","loadType":"ResilienceLoadTest","goals":[{"metric":"max response time","threshold":"5000","color":"red"},{"metric":"mean response time","threshold":"2000","color":"yellow"}],"warmUp":null,"steadyState":null}

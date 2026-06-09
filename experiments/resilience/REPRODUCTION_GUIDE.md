@@ -1,9 +1,9 @@
 # MiSArch Tier A Resilience Experiments — Reproduction Guide
 
-This document records **what we did, in order**, so the team can reproduce the full workflow without reading chat history. It covers cluster provisioning, experiment design, shop preparation, execution, result export, and teardown.
+This document documents work on: cluster provisioning, experiment design, shop preparation, execution, result export, and teardown.
 
 **Repository:** `MiSArch-infrastructure-k8s`  
-**Branch used:** `cursor/flash-sale-load-experiment` (flash-sale artifacts + resilience automation)  
+**Branch used:** `cursor/tier-a-resilience-experiments`  
 **Reference run:** 2026-06-09 (~3.3 hours for full Tier A suite)
 
 ---

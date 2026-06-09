@@ -1,0 +1,23 @@
+MiSArch Tier A Resilience Experiment
+====================================
+Profile ID:    1
+Profile:       baseline-spike
+Name:          Baseline Flash Sale Spike
+Hypothesis:    Under 50→250→50 users/s with no faults, pipeline completes and captures baseline latency/error metrics.
+Load:          baseline=50 peak=250 users/s (210s)
+Shop mode:     normal
+Misarch config: profiles/misarch/baseline.json
+Chaos config:   profiles/chaos/empty.json
+Exported:      2026-06-09T08:54:02Z
+
+Metrics focus:
+  - influxdb-summary.json: error_ratio, response times, request rates (ok/ko)
+  - Compare peak_requests_per_second and mean_response_time_ms across profiles
+  - executor.log.snippet: Grafana export + fault plugin activity
+  - gatling.log.snippet: BUILD SUCCESSFUL / simulation completion
+
+Suggested refactorings if hypothesis confirmed:
+  - Timeouts + circuit breakers on sync hot path (inventory, payment)
+  - Saga orchestration + outbox + compensation
+  - Durable messaging / DLQ for pub/sub pipeline
+  - Gateway load shedding under spike + compound faults

@@ -1,0 +1,1 @@
+{"testUUID":"299c86a0-1793-4c6d-ae0b-a738fc10ae6a","testVersion":"v1","testName":"PubSub Disruption","loadType":"ResilienceLoadTest","goals":[{"metric":"max response time","threshold":"5000","color":"red"},{"metric":"mean response time","threshold":"2000","color":"yellow"}],"warmUp":null,"steadyState":null}
