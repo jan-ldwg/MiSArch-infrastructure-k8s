@@ -39,5 +39,6 @@ backend.gcs.hcl
 terraform/gcp-dev/backend.gcs.hcl
 
 # Exported experiment results (large CSV/JSON snapshots)
-experiments/**/results/
+experiments/**/results/**
+!experiments/resilience/results/TIER-A-ANALYSIS.md
 .DS_Store
