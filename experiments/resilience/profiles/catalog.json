@@ -1,0 +1,72 @@
+{
+  "baseline-spike": {
+    "id": 1,
+    "name": "Baseline Flash Sale Spike",
+    "hypothesis": "Under 50→250→50 users/s with no faults, pipeline completes and captures baseline latency/error metrics.",
+    "misarchProfile": "baseline.json",
+    "chaosProfile": "empty.json",
+    "loadType": "ScalabilityLoadTest",
+    "peakUsers": 250,
+    "shopMode": "normal"
+  },
+  "inventory-slowdown": {
+    "id": 3,
+    "name": "Inventory Slowdown Cascade",
+    "hypothesis": "3s inbound delay on inventory during peak causes cascading latency without circuit breaking.",
+    "misarchProfile": "inventory-slowdown.json",
+    "chaosProfile": "empty.json",
+    "loadType": "ResilienceLoadTest",
+    "peakUsers": 250,
+    "shopMode": "normal"
+  },
+  "payment-failure": {
+    "id": 4,
+    "name": "Payment Hard Failure",
+    "hypothesis": "90% payment errors during checkout produce orphan orders or incorrect saga events.",
+    "misarchProfile": "payment-failure.json",
+    "chaosProfile": "empty.json",
+    "loadType": "ResilienceLoadTest",
+    "peakUsers": 250,
+    "shopMode": "normal"
+  },
+  "pubsub-disruption": {
+    "id": 5,
+    "name": "PubSub Disruption",
+    "hypothesis": "Order pub/sub deterioration during peak causes silent async fulfillment failures.",
+    "misarchProfile": "pubsub-disruption.json",
+    "chaosProfile": "empty.json",
+    "loadType": "ResilienceLoadTest",
+    "peakUsers": 250,
+    "shopMode": "normal"
+  },
+  "inventory-kill-oversell": {
+    "id": 6,
+    "name": "Inventory Kill Oversell",
+    "hypothesis": "Inventory pod kill under concurrent reservations on low stock causes oversell or inconsistent stock.",
+    "misarchProfile": "inventory-kill-oversell.json",
+    "chaosProfile": "inventory-kill.json",
+    "loadType": "ResilienceLoadTest",
+    "peakUsers": 200,
+    "shopMode": "low-stock"
+  },
+  "retry-storm": {
+    "id": 11,
+    "name": "Retry Storm",
+    "hypothesis": "2s inventory delay with intermittent 503s amplifies Order→Inventory traffic beyond user load (retry storm).",
+    "misarchProfile": "retry-storm.json",
+    "chaosProfile": "empty.json",
+    "loadType": "ResilienceLoadTest",
+    "peakUsers": 250,
+    "shopMode": "normal"
+  },
+  "compound-fault": {
+    "id": 12,
+    "name": "Compound Fault",
+    "hypothesis": "Inventory delay + payment errors + order pub/sub faults under spike exceed individual failure impact.",
+    "misarchProfile": "compound-fault.json",
+    "chaosProfile": "empty.json",
+    "loadType": "ResilienceLoadTest",
+    "peakUsers": 250,
+    "shopMode": "normal"
+  }
+}

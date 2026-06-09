@@ -80,6 +80,63 @@ kubectl port-forward svc/prometheus-stack-grafana -n misarch 3000:80
 
 Experiment UI: `https://<INGRESS_IP>/frontend/`
 
+## Viewing and exporting results
+
+After a run completes, metrics are stored in **InfluxDB** (bucket `gatling`, org `misarch`) tagged with `testUUID` and `testVersion`. The run script also exports a local snapshot under `experiments/flash-sale/results/` (gitignored).
+
+### 1. Local export (recommended for analysis)
+
+```sh
+TEST_UUID=<uuid> TEST_VERSION=v1 ./scripts/export-experiment-results.sh
+# or automatically after a successful run via run-flash-sale-experiment.sh
+```
+
+Each export directory contains `manifest.json`, API configs, `usersteps-*.csv`, `influxdb-metrics.csv`, `influxdb-summary.json`, and log snippets.
+
+### 2. InfluxDB (primary metrics store)
+
+```sh
+kubectl port-forward svc/influxdb -n misarch 8086:8086
+terraform output -raw influxdb_admin_token   # or secret influxdb-admin-token
+```
+
+Example Flux query:
+
+```flux
+from(bucket:"gatling")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r.testUUID == "f539bdee-22cc-4ef2-91ba-602e72e4de5f" and r.testVersion == "v1")
+```
+
+Web UI: `http://localhost:8086` (user `admin`; password from `variables-misc.tf`, default `admin123`).
+
+Useful measurements: `meanNumberOfRequestsPerSecondTotal`, `numberOfRequestsTotal`, `meanResponseTimeTotal` (and `flavor=ok|ko` variants).
+
+### 3. Grafana (Explore)
+
+Grafana is not on ingress — port-forward only:
+
+```sh
+kubectl port-forward svc/prometheus-stack-grafana -n misarch 3000:80
+kubectl get secret -n misarch prometheus-stack-grafana \
+  -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Use **Explore** with the pre-provisioned InfluxDB datasource and the same Flux filter as above.
+
+**Auto-dashboard note:** The experiment executor creates a Grafana dashboard URL on success. If you see `401 Unauthorized` in executor logs, `GRAFANA_ADMIN_PASSWORD` in `configmaps.tf` did not match the `prometheus-stack-grafana` secret. This is fixed in Terraform by reading the secret value directly; run `terraform apply` to roll out.
+
+### 4. Experiment UI and executor PVC
+
+- **UI:** `https://<INGRESS_IP>/frontend/` — load experiment by UUID/version for configs and re-run.
+- **API:** `GET /experiment/{uuid}/{version}/config` and `/gatlingConfig`
+- **PVC:** configs persist at `/home/java/tests/{uuid}/{version}/` on the experiment-executor pod. Raw Gatling HTML is not stored (`STORE_RESULT_DATA_IN_FILES=false`).
+
+```sh
+kubectl exec -n misarch deploy/misarch-experiment-executor -- \
+  ls /home/java/tests/<uuid>/<version>/
+```
+
 ## Files
 
 | File | Purpose |
@@ -90,6 +147,7 @@ Experiment UI: `https://<INGRESS_IP>/frontend/`
 | `usersteps-browse.csv` | ~15% load profile (browse) |
 | `../../scripts/seed-flash-sale-catalog.sh` | Catalog + Gatling user setup |
 | `../../scripts/run-flash-sale-experiment.sh` | REST API automation |
+| `../../scripts/export-experiment-results.sh` | Export configs + InfluxDB metrics locally |
 
 ## Troubleshooting
 

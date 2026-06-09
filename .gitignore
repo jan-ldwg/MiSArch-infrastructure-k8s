@@ -33,3 +33,10 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Generated GCS backend config (contains project-specific bucket name)
+backend.gcs.hcl
+terraform/gcp-dev/backend.gcs.hcl
+
+# Exported experiment results (large CSV/JSON snapshots)
+experiments/**/results/

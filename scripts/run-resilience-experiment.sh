@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Configure and run the flash-sale load experiment via the experiment-executor REST API.
+# Run a Tier A resilience experiment profile via the experiment-executor REST API.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EXPERIMENT_DIR="${ROOT_DIR}/experiments/flash-sale"
+EXPERIMENT_DIR="${ROOT_DIR}/experiments/resilience"
+FLASH_SALE_DIR="${ROOT_DIR}/experiments/flash-sale"
+PROFILE_DIR="${EXPERIMENT_DIR}/profiles"
 
+EXPERIMENT_PROFILE="${EXPERIMENT_PROFILE:-baseline-spike}"
 BASE_URL="${EXPERIMENT_BASE_URL:-}"
 CURL_INSECURE="${CURL_INSECURE:-true}"
-TEST_NAME="${TEST_NAME:-Flash Sale Spike}"
-WAIT_TIMEOUT="${WAIT_TIMEOUT:-900}"
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-1200}"
+BASELINE_USERS="${BASELINE_USERS:-50}"
+TEST_DURATION="${TEST_DURATION:-210}"
 
 log() { printf '%s\n' "$*"; }
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -20,6 +24,21 @@ require_cmd() {
 require_cmd curl
 require_cmd python3
 require_cmd jq
+require_cmd kubectl
+
+[[ -f "${PROFILE_DIR}/catalog.json" ]] || die "Missing catalog: ${PROFILE_DIR}/catalog.json"
+jq -e --arg p "$EXPERIMENT_PROFILE" '.[$p]' "${PROFILE_DIR}/catalog.json" >/dev/null \
+  || die "Unknown EXPERIMENT_PROFILE: ${EXPERIMENT_PROFILE}"
+
+PROFILE_JSON=$(jq -c --arg p "$EXPERIMENT_PROFILE" '.[$p]' "${PROFILE_DIR}/catalog.json")
+TEST_NAME=$(jq -r '.name' <<<"$PROFILE_JSON")
+LOAD_TYPE=$(jq -r '.loadType' <<<"$PROFILE_JSON")
+PEAK_USERS="${PEAK_USERS:-$(jq -r '.peakUsers' <<<"$PROFILE_JSON")}"
+SHOP_MODE=$(jq -r '.shopMode' <<<"$PROFILE_JSON")
+MISARCH_FILE=$(jq -r '.misarchProfile' <<<"$PROFILE_JSON")
+CHAOS_FILE=$(jq -r '.chaosProfile' <<<"$PROFILE_JSON")
+EXPERIMENT_ID=$(jq -r '.id' <<<"$PROFILE_JSON")
+HYPOTHESIS=$(jq -r '.hypothesis' <<<"$PROFILE_JSON")
 
 resolve_base_url() {
   if [[ -n "$BASE_URL" ]]; then
@@ -44,10 +63,6 @@ curl_api() {
   curl "${curl_args[@]}" "${BASE_URL}${path}" "$@"
 }
 
-b64_file() {
-  python3 -c 'import base64, pathlib, sys; print(base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode())' "$1"
-}
-
 build_gatling_payload() {
   python3 << PY
 import base64
@@ -55,9 +70,9 @@ import json
 import os
 from pathlib import Path
 
-root = Path("${EXPERIMENT_DIR}")
+root = Path("${FLASH_SALE_DIR}")
 baseline = int(os.environ.get("BASELINE_USERS", "50"))
-peak = int(os.environ.get("PEAK_USERS", "500"))
+peak = int(os.environ.get("PEAK_USERS", "250"))
 
 def build_steps():
     steps = [baseline] * 60
@@ -89,10 +104,17 @@ PY
 }
 
 generate_experiment() {
-  local encoded_name peak
-  peak="${PEAK_USERS:-500}"
+  local encoded_name
   encoded_name=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${TEST_NAME}'))")
-  curl_api POST "/generate?loadType=ScalabilityLoadTest&testName=${encoded_name}&testDuration=210&maximumArrivingUsersPerSecond=${peak}&rate=1"
+  curl_api POST "/generate?loadType=${LOAD_TYPE}&testName=${encoded_name}&testDuration=${TEST_DURATION}&maximumArrivingUsersPerSecond=${PEAK_USERS}&rate=1"
+}
+
+build_chaos_config() {
+  local uuid="$1"
+  local version="$2"
+  local title="${uuid}:${version}"
+  sed -e "s|__TITLE__|${title}|g" -e "s|__DESCRIPTION__|${title}|g" \
+    "${PROFILE_DIR}/chaos/${CHAOS_FILE}"
 }
 
 wait_for_completion() {
@@ -106,35 +128,16 @@ wait_for_completion() {
 
   log "Waiting for experiment completion (timeout ${WAIT_TIMEOUT}s)..."
 
-  gatling_run_finished() {
-    kubectl logs -n misarch deploy/misarch-experiment-executor --since=3h 2>/dev/null \
-      | grep -q "Finished Experiment run for testUUID: ${uuid} and testVersion: ${version}"
-  }
-
   while (( SECONDS < deadline )); do
-    if dashboard_url=$(kubectl logs -n misarch deploy/misarch-experiment-executor --since=3h 2>/dev/null \
-      | grep "/d/${uuid}-${version}" \
-      | grep -Eo 'https?://[^ ]+/d/[0-9a-f-]+-v[0-9]+' | tail -1); then
-      if [[ -n "$dashboard_url" ]]; then
-        log "Experiment finished. Dashboard URL: ${dashboard_url}"
-        return 0
-      fi
-    fi
-
-    if gatling_run_finished; then
-      log "Gatling simulation finished; checking experiment-executor for results..."
-      sleep 15
-      if kubectl logs -n misarch deploy/misarch-experiment-executor --since=3h 2>/dev/null \
-        | grep -q 'Gatling Metrics pushed to InfluxDB'; then
-        log "Gatling metrics pushed to InfluxDB."
-      fi
+    if kubectl logs -n misarch deploy/misarch-experiment-executor --since=3h 2>/dev/null \
+      | grep -q "Finished Experiment run for testUUID: ${uuid} and testVersion: ${version}"; then
       dashboard_url=$(kubectl logs -n misarch deploy/misarch-experiment-executor --since=3h 2>/dev/null \
         | grep "/d/${uuid}-${version}" \
         | grep -Eo 'https?://[^ ]+/d/[0-9a-f-]+-v[0-9]+' | tail -1 || true)
       if [[ -n "$dashboard_url" ]]; then
         log "Experiment finished. Dashboard URL: ${dashboard_url}"
       else
-        log "Experiment finished (no Grafana dashboard URL — check experiment-executor logs for auth errors)."
+        log "Experiment finished (metrics pushed; check executor logs for dashboard URL)."
       fi
       return 0
     fi
@@ -145,26 +148,59 @@ wait_for_completion() {
     oom_reason=$(kubectl get pod -n misarch -l app=misarch-gatling-executor \
       -o jsonpath='{.items[0].status.containerStatuses[0].lastState.terminated.reason}' 2>/dev/null || true)
     if (( current_restarts > initial_restarts )) && [[ "$oom_reason" == "OOMKilled" ]]; then
-      die "Gatling executor was OOMKilled during this run. Try a lower PEAK_USERS value."
+      die "Gatling executor was OOMKilled. Lower PEAK_USERS or raise memory limits."
     fi
 
     sleep 15
   done
 
-  die "Experiment did not complete within ${WAIT_TIMEOUT}s. Check: kubectl logs -n misarch deploy/misarch-gatling-executor"
+  die "Experiment did not complete within ${WAIT_TIMEOUT}s."
+}
+
+write_resilience_notes() {
+  local run_dir="$1"
+  cat >"${run_dir}/resilience-notes.txt" <<EOF
+MiSArch Tier A Resilience Experiment
+====================================
+Profile ID:    ${EXPERIMENT_ID}
+Profile:       ${EXPERIMENT_PROFILE}
+Name:          ${TEST_NAME}
+Hypothesis:    ${HYPOTHESIS}
+Load:          baseline=${BASELINE_USERS} peak=${PEAK_USERS} users/s (${TEST_DURATION}s)
+Shop mode:     ${SHOP_MODE}
+Misarch config: profiles/misarch/${MISARCH_FILE}
+Chaos config:   profiles/chaos/${CHAOS_FILE}
+Exported:      $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+Metrics focus:
+  - influxdb-summary.json: error_ratio, response times, request rates (ok/ko)
+  - Compare peak_requests_per_second and mean_response_time_ms across profiles
+  - executor.log.snippet: Grafana export + fault plugin activity
+  - gatling.log.snippet: BUILD SUCCESSFUL / simulation completion
+
+Suggested refactorings if hypothesis confirmed:
+  - Timeouts + circuit breakers on sync hot path (inventory, payment)
+  - Saga orchestration + outbox + compensation
+  - Durable messaging / DLQ for pub/sub pipeline
+  - Gateway load shedding under spike + compound faults
+EOF
 }
 
 main() {
   BASE_URL="$(resolve_base_url)"
+  log "Profile: ${EXPERIMENT_PROFILE} (Tier A #${EXPERIMENT_ID})"
   log "Experiment API: ${BASE_URL}"
-  log "Load profile: baseline=${BASELINE_USERS:-50} users/s, peak=${PEAK_USERS:-500} users/s"
+  log "Load: baseline=${BASELINE_USERS} peak=${PEAK_USERS} users/s"
+
+  if [[ "${SKIP_SHOP_SEED:-false}" != "true" ]]; then
+    log "Preparing shop (mode=${SHOP_MODE})..."
+    SHOP_MODE="$SHOP_MODE" "${ROOT_DIR}/scripts/seed-resilience-shop.sh"
+  fi
 
   for f in \
-    "${EXPERIMENT_DIR}/flashSaleBuyProcess.kt" \
-    "${EXPERIMENT_DIR}/flashSaleBrowseOnly.kt" \
-    "${EXPERIMENT_DIR}/usersteps-buy.csv" \
-    "${EXPERIMENT_DIR}/usersteps-browse.csv"; do
-    [[ -f "$f" ]] || die "Missing required file: $f"
+    "${FLASH_SALE_DIR}/flashSaleBuyProcess.kt" \
+    "${FLASH_SALE_DIR}/flashSaleBrowseOnly.kt"; do
+    [[ -f "$f" ]] || die "Missing Gatling scenario: $f"
   done
 
   local uuid_version uuid version
@@ -174,68 +210,70 @@ main() {
   version="${uuid_version##*:}"
   log "Created experiment ${uuid} (${version})"
 
-  local gatling_payload experiment_config chaos_config
-  gatling_payload="$(build_gatling_payload)"
+  local gatling_payload experiment_config chaos_config misarch_config
+  gatling_payload="$(PEAK_USERS="$PEAK_USERS" BASELINE_USERS="$BASELINE_USERS" build_gatling_payload)"
   curl_api PUT "/${uuid}/${version}/gatlingConfig" \
     -H "Content-Type: application/json" \
     --data-binary "$gatling_payload" >/dev/null
-  log "Uploaded Gatling scenarios and load profile"
+  log "Uploaded Gatling scenarios"
 
   experiment_config=$(jq -n \
     --arg testUUID "$uuid" \
     --arg testVersion "$version" \
     --arg testName "$TEST_NAME" \
+    --arg loadType "$LOAD_TYPE" \
+    --arg profile "$EXPERIMENT_PROFILE" \
     '{
       testUUID: $testUUID,
       testVersion: $testVersion,
       testName: $testName,
-      loadType: "ScalabilityLoadTest",
+      loadType: $loadType,
       goals: [
-        { metric: "max response time", threshold: "2000", color: "red" },
-        { metric: "mean response time", threshold: "1000", color: "yellow" }
+        { metric: "max response time", threshold: "5000", color: "red" },
+        { metric: "mean response time", threshold: "2000", color: "yellow" }
       ]
     }')
   curl_api PUT "/${uuid}/${version}/config" \
     -H "Content-Type: application/json" \
     --data-binary "$experiment_config" >/dev/null
-  log "Updated experiment config (no warm-up / steady-state)"
 
-  chaos_config=$(jq -n \
-    --arg title "${uuid}:${version}" \
-    --arg description "${uuid}:${version}" \
-    '{ title: $title, description: $description, method: [] }')
+  chaos_config="$(build_chaos_config "$uuid" "$version")"
   curl_api PUT "/${uuid}/${version}/chaosToolkitConfig" \
     -H "Content-Type: application/json" \
     --data-binary "$chaos_config" >/dev/null
 
+  misarch_config=$(cat "${PROFILE_DIR}/misarch/${MISARCH_FILE}")
   curl_api PUT "/${uuid}/${version}/misarchExperimentConfig" \
     -H "Content-Type: application/json" \
-    --data-binary '[]' >/dev/null
-  log "Disabled failure injection configs"
+    --data-binary "$misarch_config" >/dev/null
+  log "Uploaded fault injection configs"
 
   local start_code
-  start_code=$(curl_api POST "/${uuid}/${version}/start" -o /tmp/flash-sale-start.out -w '%{http_code}')
-  [[ "$start_code" == "200" ]] || die "Failed to start experiment (HTTP ${start_code}): $(cat /tmp/flash-sale-start.out)"
+  start_code=$(curl_api POST "/${uuid}/${version}/start" -o /tmp/resilience-start.out -w '%{http_code}')
+  [[ "$start_code" == "200" ]] || die "Failed to start (HTTP ${start_code}): $(cat /tmp/resilience-start.out)"
   log "Experiment started"
 
   wait_for_completion "$uuid" "$version"
 
   local results_dir="${EXPERIMENT_DIR}/results/${uuid}-${version}"
+  mkdir -p "$results_dir"
+  write_resilience_notes "$results_dir"
+
   if [[ -x "${ROOT_DIR}/scripts/export-experiment-results.sh" ]]; then
     log "Exporting results..."
     TEST_UUID="$uuid" TEST_VERSION="$version" \
-      PEAK_USERS="${PEAK_USERS:-500}" BASELINE_USERS="${BASELINE_USERS:-50}" \
+      EXPERIMENT_DIR="$EXPERIMENT_DIR" \
+      PEAK_USERS="$PEAK_USERS" BASELINE_USERS="$BASELINE_USERS" \
       EXPERIMENT_BASE_URL="$BASE_URL" \
+      EXPERIMENT_PROFILE="$EXPERIMENT_PROFILE" \
       "${ROOT_DIR}/scripts/export-experiment-results.sh" || \
-      log "Warning: results export failed (see errors above)."
+      log "Warning: export failed (see errors above)."
   fi
 
-  log "Done. Experiment UI: ${BASE_URL%/experiment}/frontend/"
-  if [[ -d "$results_dir" ]]; then
-    log "Results saved to: ${results_dir}/"
-    log "View InfluxDB:  kubectl port-forward svc/influxdb -n misarch 8086:8086"
-    log "View Grafana:   kubectl port-forward svc/prometheus-stack-grafana -n misarch 3000:80"
-  fi
+  echo "${uuid}" > "${EXPERIMENT_DIR}/results/.last-uuid"
+  echo "${EXPERIMENT_PROFILE}" >> "${EXPERIMENT_DIR}/results/run-log.txt"
+
+  log "Done. Results: ${results_dir}/"
 }
 
 main "$@"

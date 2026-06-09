@@ -1,0 +1,520 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 200,
+      "panels": [],
+      "title": "Load Profile",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"activeUsers\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> filter(fn: (r) => r._measurement =~ /${scenario:regex}/)",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Users",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"requests\" or r._field == \"responses\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> filter(fn: (r) => r._measurement == \"all\")",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests & Responses (aggregate)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 201,
+      "panels": [],
+      "title": "Experiment Summary",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 10 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"meanNumberOfRequestsPerSecondOk\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Peak RPS (OK)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 10 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"meanNumberOfRequestsPerSecondKo\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Peak RPS (KO)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 10 },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"numberOfRequestsKo\" or r._field == \"numberOfRequestsOk\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: if (r.numberOfRequestsOk + r.numberOfRequestsKo) > 0.0 then 100.0 * r.numberOfRequestsKo / (r.numberOfRequestsOk + r.numberOfRequestsKo) else 0.0}))",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Error Ratio (requests)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 5000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 10 },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"meanResponseTimeOk\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Mean Response Time (OK)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5000 },
+              { "color": "red", "value": 30000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 10 },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"meanResponseTimeKo\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Mean Response Time (KO)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 10 },
+      "id": 8,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"numberOfRequestsOk\")\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Requests (OK)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 202,
+      "panels": [],
+      "title": "Per-Endpoint Breakdown",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "_value" },
+            "properties": [{ "id": "displayName", "value": "value" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "_field" },
+            "properties": [{ "id": "displayName", "value": "metric" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 15 },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field =~ /^meanNumberOfRequestsPerSecond/)\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_value\"], desc: true)",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "RPS by Endpoint",
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "_start": true, "_stop": true, "_measurement": true, "result": true, "table": true, "testUUID": true, "testVersion": true }, "indexByName": {}, "renameByName": {} } }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 15 },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field =~ /^meanResponseTime/)\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> last()\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_value\"], desc: true)",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Response Time by Endpoint",
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "_start": true, "_stop": true, "_measurement": true, "result": true, "table": true, "testUUID": true, "testVersion": true }, "indexByName": {}, "renameByName": {} } }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["misarch", "influxdb", "experiments", "gatling"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "gatling", "value": "gatling" },
+        "hide": 2,
+        "label": "Bucket",
+        "name": "bucket",
+        "options": [{ "selected": true, "text": "gatling", "value": "gatling" }],
+        "query": "gatling",
+        "type": "constant"
+      },
+      {
+        "current": { "selected": false, "text": "", "value": "" },
+        "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+        "definition": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"${bucket}\", tag: \"testUUID\")",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Experiment UUID",
+        "multi": false,
+        "name": "testUUID",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"${bucket}\", tag: \"testUUID\")",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": false, "text": "v1", "value": "v1" },
+        "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+        "definition": "from(bucket: \"${bucket}\")\n  |> range(start: -90d)\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> keep(columns: [\"testVersion\"])\n  |> distinct(column: \"testVersion\")",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Version",
+        "multi": false,
+        "name": "testVersion",
+        "options": [],
+        "query": "from(bucket: \"${bucket}\")\n  |> range(start: -90d)\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> keep(columns: [\"testVersion\"])\n  |> distinct(column: \"testVersion\")",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "datasource": { "type": "influxdb", "uid": "influxdb_uid" },
+        "definition": "from(bucket: \"${bucket}\")\n  |> range(start: -90d)\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> filter(fn: (r) => r._field == \"activeUsers\")\n  |> keep(columns: [\"_measurement\"])\n  |> distinct(column: \"_measurement\")",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Scenario",
+        "multi": true,
+        "name": "scenario",
+        "options": [],
+        "query": "from(bucket: \"${bucket}\")\n  |> range(start: -90d)\n  |> filter(fn: (r) => r.testUUID == \"${testUUID}\")\n  |> filter(fn: (r) => r.testVersion == \"${testVersion}\")\n  |> filter(fn: (r) => r._field == \"activeUsers\")\n  |> keep(columns: [\"_measurement\"])\n  |> distinct(column: \"_measurement\")",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MiSArch Experiments",
+  "uid": "misarch-experiments",
+  "version": 1,
+  "weekStart": ""
+}

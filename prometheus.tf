@@ -16,6 +16,17 @@ resource "helm_release" "prometheus_grafana_stack" {
 
   grafana:
     enabled: true
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        labelValue: "1"
+        folderAnnotation: grafana_folder
+        provider:
+          # Required when using grafana_folder annotation; otherwise JSON files
+          # land in /tmp/dashboards/<folder>/ but Grafana ignores subdirectories.
+          foldersFromFilesStructure: true
+          allowUiUpdates: true
     datasources:
       datasources.yaml:
         apiVersion: 1
@@ -35,4 +46,13 @@ resource "helm_release" "prometheus_grafana_stack" {
 
   EOF
   ]
+}
+
+data "kubernetes_secret" "grafana_admin" {
+  depends_on = [helm_release.prometheus_grafana_stack]
+
+  metadata {
+    name      = "prometheus-stack-grafana"
+    namespace = local.namespace
+  }
 }

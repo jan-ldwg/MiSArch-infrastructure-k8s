@@ -639,6 +639,8 @@ resource "kubernetes_config_map" "rabbitmq_env_vars" {
 }
 
 resource "kubernetes_config_map" "misarch_experiment_executor_env_vars" {
+  depends_on = [helm_release.prometheus_grafana_stack]
+
   metadata {
     name      = local.misarch_experiment_executor_env_vars_configmap
     namespace = local.namespace
@@ -646,7 +648,7 @@ resource "kubernetes_config_map" "misarch_experiment_executor_env_vars" {
 
   data = {
     "GRAFANA_ADMIN_USER"             = "admin"
-    "GRAFANA_ADMIN_PASSWORD"         = "prom-operator"
+    "GRAFANA_ADMIN_PASSWORD"         = data.kubernetes_secret.grafana_admin.data["admin-password"]
     "GRAFANA_HOST"                   = "http://${local.grafana_url}"
     "MISARCH_EXPERIMENT_CONFIG_HOST" = "http://${local.experiment_config_url}"
     "EXPERIMENT_EXECUTOR_URL"        = "http://${local.experiment_executor_url}"

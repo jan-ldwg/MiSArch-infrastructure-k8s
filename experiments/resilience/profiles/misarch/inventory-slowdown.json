@@ -1,0 +1,34 @@
+[
+  {
+    "failures": [
+      {
+        "name": "inventory",
+        "pubSubDeterioration": null,
+        "serviceInvocationDeterioration": [
+          {
+            "path": "/",
+            "delay": 3000,
+            "delayProbability": 1.0,
+            "errorProbability": 0.1,
+            "errorCode": 503
+          }
+        ],
+        "artificialMemoryUsage": null,
+        "artificialCPUUsage": null
+      }
+    ],
+    "pauses": { "before": 75, "after": 60 }
+  },
+  {
+    "failures": [
+      {
+        "name": "inventory",
+        "pubSubDeterioration": null,
+        "serviceInvocationDeterioration": null,
+        "artificialMemoryUsage": null,
+        "artificialCPUUsage": null
+      }
+    ],
+    "pauses": { "before": 0, "after": 0 }
+  }
+]
