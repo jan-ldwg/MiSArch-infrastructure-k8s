@@ -13,8 +13,9 @@ data "kubernetes_service" "ingress_lb" {
 
 // Global Domain
 locals {
-  // This will likely change in the future. If the backend is not exposed via the internet, this must be set to the localhost port-forward URL.
-  global_domain = "http://${data.kubernetes_service.ingress_lb.status[0].load_balancer[0].ingress[0].ip}"
+  ingress_ip = data.kubernetes_service.ingress_lb.status[0].load_balancer[0].ingress[0].ip
+  // Prefer explicit ROOT_DOMAIN from deploy-dev.sh; otherwise derive HTTPS URL from ingress IP.
+  global_domain = var.ROOT_DOMAIN != "http://localhost:8080" ? var.ROOT_DOMAIN : "https://${local.ingress_ip}"
 }
 
 // DBs

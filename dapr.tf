@@ -28,6 +28,10 @@ resource "helm_release" "redis" {
 
   metrics:
     enabled: true
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: prometheus-stack
   EOF
   ]
 }
@@ -126,5 +130,5 @@ resource "kubectl_manifest" "dapr_config" {
 // Pseudo resource so that all services can simply depend on this resource instead of the whole list ↓
 resource "terraform_data" "dapr" {
   depends_on = [helm_release.dapr, kubectl_manifest.dapr_config, kubectl_manifest.dapr_pubsub_config_experiment_config,
-    kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config]
+  kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config]
 }

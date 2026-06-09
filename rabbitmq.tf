@@ -41,6 +41,10 @@ resource "helm_release" "rabbitmq" {
       erlangCookie: "${var.RABBITMQ_ERLANG_COOKIE}"
     metrics:
       enabled: true
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: prometheus-stack
     ulimitNofiles: "" # By default, RabbitMQ tries to change the ULIMIT for files, but that doesn't work on some clusters
     extraEnvVarsCM: "${local.rabbitmq_env_vars_configmap}"
     EOF

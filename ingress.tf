@@ -1,4 +1,6 @@
 resource "kubernetes_ingress_v1" "misarch" {
+  depends_on = [kubernetes_secret.misarch_ingress_tls]
+
   metadata {
     name        = local.ingress_name
     namespace   = local.namespace
@@ -6,6 +8,10 @@ resource "kubernetes_ingress_v1" "misarch" {
   }
 
   spec {
+    tls {
+      secret_name = "misarch-ingress-tls"
+    }
+
     default_backend {
       service {
         name = local.misarch_frontend_service_name

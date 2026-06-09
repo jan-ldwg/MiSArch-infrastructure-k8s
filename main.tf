@@ -1,9 +1,14 @@
 terraform {
+  backend "gcs" {}
+
   required_providers {
     kubectl = {
-      # alekc/kubectl is the maintained fork of gavinbunney/kubectl. The original is unmaintained now.
       source  = "alekc/kubectl"
       version = "~> 2.1"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
     }
   }
 }

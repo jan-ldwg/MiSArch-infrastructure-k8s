@@ -36,9 +36,26 @@ resource "helm_release" "otel-collector" {
                 kubernetes_sd_configs:
                   - role: pod
                 relabel_configs:
+                  - source_labels: [__meta_kubernetes_pod_annotation_dapr_io_enabled]
+                    action: keep
+                    regex: "true"
                   - source_labels: [__meta_kubernetes_pod_label_app]
                     action: keep
                     regex: keycloak|misarch-(address|catalog|discount|gateway|inventory|invoice|media|notification|order|payment|return|review|shipment|shoppingcart|simulation|tax|user|wishlist)
+                  - source_labels: [__meta_kubernetes_pod_annotation_dapr_io_app_id]
+                    action: replace
+                    target_label: app_id
+                  - source_labels: [__meta_kubernetes_namespace]
+                    action: replace
+                    target_label: namespace
+                  - source_labels: [__meta_kubernetes_pod_name]
+                    action: replace
+                    target_label: pod
+                  - source_labels: [__meta_kubernetes_pod_ip]
+                    action: replace
+                    regex: (.+)
+                    replacement: $${1}:9090
+                    target_label: __address__
 
       exporters:
         prometheus:

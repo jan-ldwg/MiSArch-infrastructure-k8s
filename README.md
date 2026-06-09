@@ -7,6 +7,34 @@ Additional information on top can be found in the [documentation](https://misarc
 
 ## Deploying
 
+### GCP dev (GKE, fully automated)
+
+For a dev deployment on Google Cloud (GKE Standard in `europe-west3`), use the wrapper script:
+
+```sh
+chmod +x scripts/deploy-dev.sh
+./scripts/deploy-dev.sh bootstrap   # first run only: create GCS state bucket
+./scripts/deploy-dev.sh apply       # platform (VPC, GKE, ingress) + MiSArch stack
+```
+
+Prerequisites: `gcloud` (authenticated), `terraform` >= 1.0.11, `kubectl`, `helm`, `gke-gcloud-auth-plugin`, and Application Default Credentials:
+
+```sh
+gcloud auth application-default login
+```
+
+After apply, open the frontend at the printed `root_domain_url` (HTTPS with a self-signed certificate). Keycloak is at `<root_domain_url>/keycloak`.
+
+To tear down:
+
+```sh
+./scripts/deploy-dev.sh destroy
+```
+
+Platform Terraform lives in [terraform/gcp-dev](terraform/gcp-dev). Application Kubernetes resources remain in this directory.
+
+### Existing Kubernetes cluster
+
 Initially, run
 ```sh
 terraform init
