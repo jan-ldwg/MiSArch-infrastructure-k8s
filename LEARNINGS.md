@@ -89,18 +89,10 @@ Now we can apply the rest of the Terraform plan. This will take a few minutes.
 terraform apply
 ```
 
-We also need an ingress for our cluster so we will install Ingress-Nginx Controller. Note that this project is depracated and a replacement should be investigated.
-
-```sh
-helm upgrade --install ingress-nginx ingress-nginx \
-  --repo https://kubernetes.github.io/ingress-nginx \
-  --namespace ingress-nginx --create-namespace
-```
-
 To get the public IP address you can run this command:
 
 ```sh
-kubectl get service --namespace ingress-nginx ingress-nginx-controller --output wide --watch
+kubectl get svc ingress-nginx-controller -n misarch
 ```
 
 EXTERNAL-IP is the address you need to test out the application in a web browser.
@@ -119,9 +111,11 @@ usernam: admin
 password:
 
 ```sh
-kubectl get secret -n misarch prometheus-stack-grafana \
-  -o jsonpath="{.data.admin-password}" | base64 --decode
+terraform output grafana_admin_password
 ```
+
+To access an experiment dashboard, go to the forwarded URL (
+`localhost:3000/d/<EXPERIMENT_ID>`)
 
 ## InfluxDB
 
@@ -138,28 +132,22 @@ EXTERNAL_IP/keycloak
 username: admin
 password: admin
 
-## Experiment
+## Experiment Config
 
 ```sh
 kubectl port-forward svc/misarch-experiment-config-frontend 8080:80 -n misarch
 ```
 
+## Experiment Executor
+
 The experiment frontend is reachable at EXTERNAL-IP/frontend.
 
 # Deleting the cluster
 
-After you are done you can delete the cluster again
-
-First delete all volumes
+After you are done you can stop everything
 
 ```sh
-kubectl delete pvc --all -A
-```
-
-Check that there are no disks left running
-
-```sh
-gcloud compute disks list --filter="name~'pvc-' AND region:europe-west3"
+terraform destroy
 ```
 
 Then delete the cluster

@@ -16,6 +16,8 @@ resource "helm_release" "prometheus_grafana_stack" {
 
   grafana:
     enabled: true
+    adminUser: admin
+    adminPassword: ${random_password.grafana_admin_password.result}
     datasources:
       datasources.yaml:
         apiVersion: 1

@@ -99,6 +99,10 @@ resource "random_password" "redis" {
   special = false
 }
 
+resource "random_password" "grafana_admin_password" {
+  length  = 32
+  special = false
+}
 
 
 
@@ -204,6 +208,11 @@ output "rabbitmq_password" {
 
 output "redis_password" {
   value     = random_password.redis.result
+  sensitive = true
+}
+
+output "grafana_admin_password" {
+  value    = random_password.grafana_admin_password.result
   sensitive = true
 }
 
