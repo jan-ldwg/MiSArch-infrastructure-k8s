@@ -215,6 +215,12 @@ Then check with
 kubectl get namespaces
 ```
 
+Get logs from a pod:
+
+```sh
+kubectl logs <POD_NAME> -n misarch
+```
+
 ## ToDos
 
 - Image service is broken

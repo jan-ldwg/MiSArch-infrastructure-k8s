@@ -31,7 +31,7 @@ resource "kubernetes_job" "misarch_testdata" {
 
         container {
           name              = "testdata"
-          image             = "ghcr.io/misarch/testdata:${var.MISARCH_TESTDATA_VERSION}"
+          image             = var.MISARCH_TESTDATA_VERSION
           image_pull_policy = "Always"
 
           env {

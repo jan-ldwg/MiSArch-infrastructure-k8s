@@ -176,5 +176,5 @@ variable "MISARCH_CHAOSTOOLKIT_EXECUTOR_VERSION" {
 
 variable "MISARCH_TESTDATA_VERSION" {
   type    = string
-  default = "main@sha256:ac97d227288a5b7898873c06bc3b6877a012e3fa64283f9b4d27c08149ceaeec"
+  default = "ghcr.io/misarch/testdata:latest"
 }
