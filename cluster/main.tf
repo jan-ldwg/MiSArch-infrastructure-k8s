@@ -1,7 +1,7 @@
 terraform {
   backend "gcs" {
-    bucket = var.bucket_id
-    prefix = var.bucket_prefix
+    bucket = "misarch-terraform-state"
+    prefix = "misarch/cluster"
   }
   required_providers {
     google = {

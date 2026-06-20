@@ -4,16 +4,6 @@ variable "project_id" {
   # No default: must be set explicitly, otherwise Terraform will prompt.
 }
 
-variable "bucket_id" {
-  description = "The bucket to save the terraform state to"
-  type        = string
-}
-
-variable "bucket_prefix" {
-  description = "The prefix used for the terraform state in the bucket"
-  type        = string
-}
-
 variable "region" {
   description = "GCP region for the provider (used for region-scoped APIs)"
   type        = string

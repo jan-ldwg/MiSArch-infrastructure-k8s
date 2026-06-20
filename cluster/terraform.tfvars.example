@@ -1,3 +1,1 @@
 project_id = "<YOUR PROJECT ID>"
-bucket_id = "misarch-terraform-state"
-bucket_prefix ="misarch/cluster"
