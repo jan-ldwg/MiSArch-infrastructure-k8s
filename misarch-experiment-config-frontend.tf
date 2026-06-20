@@ -43,7 +43,7 @@ resource "kubernetes_deployment" "misarch_experiment_config_frontend" {
       spec {
 
         container {
-          image             = "ghcr.io/misarch/experiment-config-frontend:main"
+          image             = "ghcr.io/misarch/experiment-config-frontend:${var.MISARCH_EXPERIMENT_CONFIG_FRONTEND_VERSION}"
           image_pull_policy = "Always"
 
           name = "misarch-experiment-config-frontend"
