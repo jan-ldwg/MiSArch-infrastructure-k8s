@@ -75,6 +75,16 @@ variable "RABBITMQ_ERLANG_COOKIE" {
   default = "RABBITMQ_MISARCH_ERLANG_COOKIE"
 }
 
+variable "cluster_bucket_id"{
+  type = string
+  description = "Bucket with the credentials to the cluster"
+}
+
+variable "cluster_bucket_prefix"{
+  type = string
+  description = "Prefix for the credentials in the bucket "
+}
+
 locals {
   dapr_general_config_name = "dapr-config"
 }

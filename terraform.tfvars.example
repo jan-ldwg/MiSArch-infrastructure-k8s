@@ -1,0 +1,2 @@
+cluster_bucket_id = "misarch-terraform-state"
+cluster_bucket_prefix ="misarch/cluster"

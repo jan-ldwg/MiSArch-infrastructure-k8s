@@ -1,6 +1,6 @@
-## Set up MiSArch on GKE
+## Requirements
 
-Before getting started make sure you have Terraform, Helm and gcloud CLI installed
+Before getting started make sure you have Terraform and gcloud CLI installed
 
 ```sh
 terraform version
@@ -8,10 +8,6 @@ terraform version
 
 ```sh
 gcloud version
-```
-
-```sh
-helm version
 ```
 
 You also need the gke-auth-plugin
@@ -23,7 +19,7 @@ You also need the gke-auth-plugin
 Clone the git repository with the Terraform templates
 
 ```sh
-git clone https://github.com/JulianLegler/MiSArch-infrastructure-k8s.git
+git clone https://github.com/jan-ldwg/MiSArch-infrastructure-k8s.git
 
 ```
 
@@ -33,54 +29,59 @@ Make sure gcloud CLI is connected to the right Google Cloud account and project.
 gcloud init
 ```
 
+You will need a GCS bucket for the Terraform state. You can create it using:
+
+```sh
+gcloud storage buckets create gs://misarch-terraform-state --location=europe-west3
+```
+
 Initialize Terraform
 
 ```sh
 terraform init
 ```
 
-The provided Terraform scripts do not create a new Kubernetes cluster on GKE so this has to be set up beforehand.
+## Spin up the cluster
 
-In the Google Cloud web ui enable the Kubernetes Engine API.
+According to [best practices](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs#stacking-with-managed-kubernetes-cluster-resources) the GKE cluster is provisioned with a separate Terraform stack.
 
-Then create a small Kubernetes cluster. This will take a few minutes.
+Navigate to the cluster folder
 
 ```sh
-gcloud container clusters create misarch-cluster \
-  --region=europe-west3 \
-  --num-nodes=2 \
-  --machine-type=e2-standard-4 \
-  --disk-size=30 \
-  --disk-type=pd-standard \
-  --enable-autoscaling \
-  --min-nodes=2 \
-  --max-nodes=6
+cd ./cluster
 ```
+
+Initialize Terraform in this folder
+
+```sh
+terraform init
+```
+
+And spin up the cluster
+
+```sh
+terraform apply
+```
+
+Terraform will need a few minutes to spin up the cluster.
 
 e2-standard-4 instance has 4 vCPUs (x86) and 16G memory.
 
-Make sure that kubectl (and Terraform) are pointing at the just created cluster:
+If you want kubectl access to the cluster for diagnostics or port forwarding run
 
 ```sh
-kubectl config current-context
+gcloud container clusters get-credentials misarch-cluster \
+  --zone europe-west3-a
 ```
 
-Now you can begin with the installation of MiSArch
+## Installing MiSArch
+
+After the cluster is up and running open a second terminal in the root of the project.
+
+Install all MiSArch components using
 
 ```sh
-terraform plan
-```
-
-The generated plan is very long. To quickly check that Terraform can make changes to the cluster we will just create the namespace for now
-
-```sh
-terraform apply -target=kubernetes_namespace.misarch
-```
-
-We can check with kubectl that the namespace was correctly created
-
-```sh
-kubectl get namespaces
+terraform apply
 ```
 
 Now we can apply the rest of the Terraform plan. This will take a few minutes.
@@ -89,15 +90,29 @@ Now we can apply the rest of the Terraform plan. This will take a few minutes.
 terraform apply
 ```
 
-To get the public IP address you can run this command:
+The public IP-address is automatically output when everything is installed, but you can also always get it by running
 
 ```sh
-kubectl get svc ingress-nginx-controller -n misarch
+terraform output global_domain
 ```
 
-EXTERNAL-IP is the address you need to test out the application in a web browser.
-
 The products might take a few more minutes to appear in the frontend.
+
+## Free all resources
+
+In the root directory of the project run
+
+```sh
+terraform destroy
+```
+
+Then switch to the cluster directory and run
+
+```sh
+terraform destroy
+```
+
+## Accessing dashboards
 
 If you want to acces one of the dashboards (e.g. Grafana) you have to forward the port
 
@@ -142,19 +157,31 @@ kubectl port-forward svc/misarch-experiment-config-frontend 8080:80 -n misarch
 
 The experiment frontend is reachable at EXTERNAL-IP/frontend.
 
-# Deleting the cluster
+## Useful commands
 
-After you are done you can stop everything
+Spin up cluster using gcloud CLI
 
 ```sh
-terraform destroy
+gcloud container clusters create misarch-cluster \
+  --region=europe-west3 \
+  --num-nodes=2 \
+  --machine-type=e2-standard-4 \
+  --disk-size=30 \
+  --disk-type=pd-standard \
+  --enable-autoscaling \
+  --min-nodes=2 \
+  --max-nodes=6
 ```
-
-Then delete the cluster
 
 ```sh
 gcloud container clusters delete misarch-cluster \
    --region=europe-west3
+```
+
+Get cluster kubectl is pointing at
+
+```sh
+kubectl config current-context
 ```
 
 Make extra sure that there are no orphan disks! They will cause issues with future deployments!
@@ -174,6 +201,18 @@ gcloud compute disks list \
 while read name zone; do
   gcloud compute disks delete "$name" --zone="$zone" --quiet
 done
+```
+
+Check Terraform can create resources in the cluster
+
+```sh
+terraform apply -target=kubernetes_namespace.misarch
+```
+
+Then check with
+
+```sh
+kubectl get namespaces
 ```
 
 ## ToDos

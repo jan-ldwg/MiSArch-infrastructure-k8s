@@ -5,21 +5,56 @@ terraform {
       source  = "alekc/kubectl"
       version = "~> 2.1"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 6.0"
+    }
   }
 }
 
+# credentials to interact with google cloud
+data "google_client_config" "default" {}
+
+# read the parameters from the infra stack
+data "terraform_remote_state" "cluster" {
+  backend = "gcs"
+  config = {
+    bucket = var.cluster_bucket_id
+    prefix = var.cluster_bucket_prefix
+  }
+
+}
+
+provider "google" {
+  project = data.terraform_remote_state.cluster.outputs.project_id
+  region  = data.terraform_remote_state.cluster.outputs.region
+}
+
 provider "kubernetes" {
-  config_path = var.KUBERNETES_CONFIG_PATH
+  host = "https://${data.terraform_remote_state.cluster.outputs.cluster_endpoint}"
+  cluster_ca_certificate = base64decode(
+    data.terraform_remote_state.cluster.outputs.cluster_ca_certificate
+  )
+  token = data.google_client_config.default.access_token
+
 }
 
 provider "helm" {
   kubernetes = {
-    config_path = var.KUBERNETES_CONFIG_PATH
+    host = "https://${data.terraform_remote_state.cluster.outputs.cluster_endpoint}"
+    cluster_ca_certificate = base64decode(
+      data.terraform_remote_state.cluster.outputs.cluster_ca_certificate
+    )
+    token = data.google_client_config.default.access_token
   }
 }
 
 provider "kubectl" {
-  config_path       = var.KUBERNETES_CONFIG_PATH
+  host = "https://${data.terraform_remote_state.cluster.outputs.cluster_endpoint}"
+  cluster_ca_certificate = base64decode(
+    data.terraform_remote_state.cluster.outputs.cluster_ca_certificate
+  )
+  token             = data.google_client_config.default.access_token
   apply_retry_count = 15 // There are some problems with (Dapr's) CRDs, so we need to retry requests for a bit
 }
 
