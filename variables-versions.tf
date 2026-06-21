@@ -176,5 +176,5 @@ variable "MISARCH_CHAOSTOOLKIT_EXECUTOR_VERSION" {
 
 variable "MISARCH_TESTDATA_VERSION" {
   type    = string
-  default = "ghcr.io/misarch/testdata:latest"
+  default = "ghcr.io/jan-ldwg/testdata:latest"
 }
