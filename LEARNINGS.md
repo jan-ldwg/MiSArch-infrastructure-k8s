@@ -138,7 +138,8 @@ To access an experiment dashboard, go to the forwarded URL (
 kubectl port-forward svc/influxdb -n misarch 4000:80
 ```
 
-Credentials unknown
+username: admin
+password: admin123
 
 ## Keycloak
 
