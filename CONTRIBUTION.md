@@ -17,3 +17,6 @@
   - pinning all images to latest release version
   - updated testdata image to seed database with more than one product
 - initial draft of baseline presentation
+- python script to automate experiment execution
+  - initial gatling and chaos configs copied from William`s proof of concept
+- set up overleaf project
