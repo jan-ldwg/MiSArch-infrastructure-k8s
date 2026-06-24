@@ -1,3 +1,23 @@
+resource "kubernetes_service" "misarch_order" {
+  metadata {
+    name      = local.misarch_order_service_name
+    labels    = merge(local.base_misarch_labels, local.misarch_order_specific_labels)
+    namespace = local.namespace
+  }
+
+  spec {
+    selector = {
+      app = local.misarch_order_service_name
+    }
+
+    port {
+      name        = "http"
+      port        = 8080
+      target_port = 8080
+    }
+  }
+}
+
 resource "kubernetes_deployment" "misarch_order" {
   depends_on = [helm_release.misarch_order_db, terraform_data.dapr]
   metadata {

@@ -201,7 +201,7 @@ resource "kubernetes_config_map" "misarch_frontend_env_vars" {
   data = {
     "GATEWAY_ENDPOINT"  = local.dapr_misarch_gateway_url
     "KEYCLOAK_ENDPOINT" = "http://${local.keycloak_url}/keycloak"
-    "MINIO_ENDPOINT"    = local.minio_url
+    "MINIO_ENDPOINT"    = "http://${local.minio_url}"
   }
 }
 
@@ -230,7 +230,7 @@ resource "kubernetes_config_map" "misarch_gateway_env_vars" {
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
-    "NODE_OPTIONS"                  = "--require @opentelemetry/auto-instrumentations-node/register"
+    "NODE_OPTIONS"                  = ""
   }
 }
 
@@ -258,7 +258,7 @@ resource "kubernetes_config_map" "misarch_inventory_env_vars" {
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
-    "NODE_OPTIONS"                  = "--require @opentelemetry/auto-instrumentations-node/register"
+    "NODE_OPTIONS"                  = ""
   }
 }
 
@@ -392,7 +392,7 @@ resource "kubernetes_config_map" "misarch_payment_env_vars" {
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
-    "NODE_OPTIONS"                  = "--require @opentelemetry/auto-instrumentations-node/register"
+    "NODE_OPTIONS"                  = ""
   }
 }
 
@@ -532,7 +532,7 @@ resource "kubernetes_config_map" "misarch_simulation_env_vars" {
     OTEL_NODE_RESOURCE_DETECTORS  = "env,host,os"
     OTEL_SERVICE_NAME          = "payment"
     OTEL_SEMCONV_STABILITY_OPT_IN = "http"
-    NODE_OPTIONS                  = "--require @opentelemetry/auto-instrumentations-node/register"
+    NODE_OPTIONS                  = ""
   }
 }
 
