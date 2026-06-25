@@ -150,11 +150,13 @@ terraform apply -var-file=local-dev.tfvars \
   -target=helm_release.redis \
   -target=helm_release.misarch_<service>_db \
   -target=helm_release.otel-collector \
+  -target=terraform_data.dapr \
   -target=kubernetes_config_map.base_misarch_env_vars \
   -target=kubernetes_config_map.misarch_<service>_env_vars \
   -target=kubernetes_config_map.misarch_<service>_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_<service>
+  -target=module.misarch_<service>
 ```
+> **Note:** Service deployments are defined via the `modules/misarch-service` module. Target the module (`module.misarch_<service>`) instead of the raw `kubernetes_deployment` resource.
 
 **Example — deploy the order service:**
 
@@ -165,10 +167,11 @@ terraform apply -var-file=local-dev.tfvars \
   -target=helm_release.redis \
   -target=helm_release.misarch_order_db \
   -target=helm_release.otel-collector \
+  -target=terraform_data.dapr \
   -target=kubernetes_config_map.base_misarch_env_vars \
   -target=kubernetes_config_map.misarch_order_env_vars \
   -target=kubernetes_config_map.misarch_order_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_order
+  -target=module.misarch_order
 ```
 
 **Step 3: Verify the service is running**
@@ -224,6 +227,7 @@ The `-target` list for any service follows a fixed template. Replace `<name>` wi
 -target=helm_release.dapr
 -target=helm_release.redis
 -target=helm_release.otel-collector
+-target=terraform_data.dapr
 -target=kubernetes_config_map.base_misarch_env_vars
 ```
 
@@ -232,7 +236,7 @@ The `-target` list for any service follows a fixed template. Replace `<name>` wi
 -target=helm_release.misarch_<name>_db
 -target=kubernetes_config_map.misarch_<name>_env_vars
 -target=kubernetes_config_map.misarch_<name>_ecs_env_vars
--target=kubernetes_deployment.misarch_<name>
+-target=module.misarch_<name>
 ```
 
 #### Full command template
@@ -242,15 +246,16 @@ terraform apply -var-file=local-dev.tfvars \
   -target=helm_release.dapr \
   -target=helm_release.redis \
   -target=helm_release.otel-collector \
+  -target=terraform_data.dapr \
   -target=kubernetes_config_map.base_misarch_env_vars \
   -target=helm_release.misarch_<NAME1>_db \
   -target=kubernetes_config_map.misarch_<NAME1>_env_vars \
   -target=kubernetes_config_map.misarch_<NAME1>_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_<NAME1> \
+  -target=module.misarch_<NAME1> \
   -target=helm_release.misarch_<NAME2>_db \
   -target=kubernetes_config_map.misarch_<NAME2>_env_vars \
   -target=kubernetes_config_map.misarch_<NAME2>_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_<NAME2>
+  -target=module.misarch_<NAME2>
 ```
 
 #### Quick reference — service names
@@ -281,29 +286,30 @@ terraform apply -var-file=local-dev.tfvars \
   -target=helm_release.dapr \
   -target=helm_release.redis \
   -target=helm_release.otel-collector \
+  -target=terraform_data.dapr \
   -target=kubernetes_config_map.base_misarch_env_vars \
   -target=helm_release.misarch_order_db \
   -target=kubernetes_config_map.misarch_order_env_vars \
   -target=kubernetes_config_map.misarch_order_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_order \
+  -target=module.misarch_order \
   -target=helm_release.misarch_catalog_db \
   -target=kubernetes_config_map.misarch_catalog_env_vars \
   -target=kubernetes_config_map.misarch_catalog_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_catalog \
+  -target=module.misarch_catalog \
   -target=helm_release.misarch_payment_db \
   -target=kubernetes_config_map.misarch_payment_env_vars \
   -target=kubernetes_config_map.misarch_payment_ecs_env_vars \
-  -target=kubernetes_deployment.misarch_payment
+  -target=module.misarch_payment
 ```
 
 #### Minimal resource footprint
 
 | Service count | Deployments | DBs | Target lines |
 |---------------|-------------|-----|-------------|
-| 1 service | 1 | 1 | 9 |
-| 2 services | 2 | 2 | 13 |
-| 3 services | 3 | 3 | 17 |
-| N services | N | N | 5 + 4×N |
+| 1 service | 1 | 1 | 10 |
+| 2 services | 2 | 2 | 14 |
+| 3 services | 3 | 3 | 18 |
+| N services | N | N | 6 + 4×N |
 
 ### Testing Services Locally via Dapr
 
@@ -376,6 +382,55 @@ This returns the list of pubsub topics the service is subscribed to, useful for 
 | `otel_disabled` | `false` | OTEL enabled (local collector deployed) |
 | `otel_collector_mode` | `"local"` | Debug exporter, no Prometheus RBAC |
 | `dapr_tracing_sampling_rate` | `"1"` | Full Dapr trace capture |
+
+## Probe Testing
+
+The `misarch-service` module adds startup, liveness, and readiness probes to every deployment. You can verify they work correctly:
+
+### Setup: separate liveness path
+
+The module supports a separate `liveness_probe_path` (defaults to `probe_path`) so liveness can be tested independently without breaking readiness (which would cause `terraform apply` to hang on `wait_for_rollout`).
+
+**Temporarily edit the module call** for any service to override:
+
+```hcl
+  liveness_probe_path             = "/nonexistent"
+  liveness_initial_delay_seconds  = 10
+```
+
+Then apply:
+
+```sh
+terraform apply -var-file=local-dev.tfvars -target=module.misarch_<service> -auto-approve
+```
+
+### What happens
+
+| Step | Prob | Path | Result |
+|---|---|---|---|
+| Pod starts | Startup | `/health` | Passes after boot → liveness/readiness activated |
+| Rollout | Readiness | `/health` | Pod becomes Ready → Terraform apply completes |
+| ~10s after startup | Liveness | `/nonexistent` | 404 response → fails 3× → **container killed** |
+
+```sh
+# Watch for the restart:
+kubectl get pods -n misarch -l app=misarch-<service> -w
+
+# Expected: 3/3 Running → 2/3 Running → restarts increment → cycle repeats
+```
+
+Verify via events:
+
+```sh
+kubectl describe pod -n misarch -l app=misarch-<service> | grep -E "Liveness probe failed|Killing"
+# Expected: "Container misarch-<service> failed liveness probe, will be restarted"
+```
+
+### Revert
+
+Remove the two override lines and re-apply. The pod returns to stable `3/3 Running`.
+
+---
 
 ## What Remains Unresolved
 
