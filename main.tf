@@ -37,26 +37,35 @@ provider "google" {
 }
 
 # ── Kubernetes providers: works on both GCP and local ──────────────────
-# On GCP:  `gcloud container clusters get-credentials` configures the kubeconfig
-#          with the gke-gcloud-auth-plugin, so config_path works out-of-box.
-# On local: `minikube start` writes the kubeconfig; "minikube" context is used.
+# On GCP:  uses the cluster endpoint, CA certificate from remote state and
+#          the access token from google_client_config.
+# On local: uses kubeconfig; "minikube" context is used.
 
 provider "kubernetes" {
-  config_path    = var.KUBERNETES_CONFIG_PATH
-  config_context = var.deployment_target == "local" ? "minikube" : null
+  host                   = var.deployment_target == "gcp" ? "https://${data.terraform_remote_state.cluster[0].outputs.cluster_endpoint}" : null
+  cluster_ca_certificate = var.deployment_target == "gcp" ? base64decode(data.terraform_remote_state.cluster[0].outputs.cluster_ca_certificate) : null
+  token                  = var.deployment_target == "gcp" ? data.google_client_config.default[0].access_token : null
+  config_path            = var.deployment_target == "local" ? var.KUBERNETES_CONFIG_PATH : null
+  config_context         = var.deployment_target == "local" ? "minikube" : null
 }
 
 provider "helm" {
   kubernetes = {
-    config_path    = var.KUBERNETES_CONFIG_PATH
-    config_context = var.deployment_target == "local" ? "minikube" : null
+    host                   = var.deployment_target == "gcp" ? "https://${data.terraform_remote_state.cluster[0].outputs.cluster_endpoint}" : null
+    cluster_ca_certificate = var.deployment_target == "gcp" ? base64decode(data.terraform_remote_state.cluster[0].outputs.cluster_ca_certificate) : null
+    token                  = var.deployment_target == "gcp" ? data.google_client_config.default[0].access_token : null
+    config_path            = var.deployment_target == "local" ? var.KUBERNETES_CONFIG_PATH : null
+    config_context         = var.deployment_target == "local" ? "minikube" : null
   }
 }
 
 provider "kubectl" {
-  config_path       = var.KUBERNETES_CONFIG_PATH
-  config_context    = var.deployment_target == "local" ? "minikube" : null
-  apply_retry_count = 15 // There are some problems with (Dapr's) CRDs, so we need to retry requests for a bit
+  host                   = var.deployment_target == "gcp" ? "https://${data.terraform_remote_state.cluster[0].outputs.cluster_endpoint}" : null
+  cluster_ca_certificate = var.deployment_target == "gcp" ? base64decode(data.terraform_remote_state.cluster[0].outputs.cluster_ca_certificate) : null
+  token                  = var.deployment_target == "gcp" ? data.google_client_config.default[0].access_token : null
+  config_path            = var.deployment_target == "local" ? var.KUBERNETES_CONFIG_PATH : null
+  config_context         = var.deployment_target == "local" ? "minikube" : null
+  apply_retry_count      = 15 // There are some problems with (Dapr's) CRDs, so we need to retry requests for a bit
 }
 
 resource "kubernetes_namespace" "misarch" {
