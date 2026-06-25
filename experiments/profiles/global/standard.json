@@ -1,9 +1,0 @@
-{
-  "testUUID": "1593b700-32dd-4b83-ba9f-2d2fe71cf7d9",
-  "testVersion": "v1",
-  "testName": "My Experiment",
-  "loadType": "NormalLoadTest",
-  "goals": [],
-  "warmUp": null,
-  "steadyState": null
-}

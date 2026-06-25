@@ -20,7 +20,6 @@ LOCAL_PORT = 4000
 REMOTE_PORT = 8888
 URL = f"http://127.0.0.1:{LOCAL_PORT}"
 EXPERIMENTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-LIST_PATH = "/experiment/list"
 
 def make_path_absolute(base_path: str, filename: str)->str:
 	if os.path.isabs(filename):
@@ -46,7 +45,6 @@ def read_and_b64_encode(file_path: str):
 			raise RuntimeError(f"Unexpected error reading file {file_path}: {e}")
 		
 		
-
 def start_port_forward():
 	'''Set up a port forward using kubectl'''
 	cmd = [
@@ -75,8 +73,9 @@ def wait_for_port(host: str, port: int, timeout: float = 10.0):
 			time.sleep(0.2)
 	return False
 	
-def generate_experiment(loadType: str = "NormalLoadTest")->tuple[str,str]:
-	url = f"{URL}/experiment/generate?loadType=NormalLoadTest&testDuration=60&maximumArrivingUsersPerSecond=3&rate=0.9"
+def generate_experiment()->tuple[str,str]:
+	'''Generates a new experiment with default values. To override the default load configuration specify a gatling config'''
+	url = f"{URL}/experiment/generate?loadType=NormalLoadTest&testDuration=60&maximumArrivingUsersPerSecond=3"
 	req = urllib.request.Request(url, method="POST")
 	try:
 		with urllib.request.urlopen(req, timeout=5) as resp:
@@ -85,7 +84,6 @@ def generate_experiment(loadType: str = "NormalLoadTest")->tuple[str,str]:
 				data = json.loads(raw)
 			except Exception:
 				data = raw.decode(errors="replace")
-			# response is expected as "id:version"
 			return tuple(str(data).split(':'))
 	except Exception as e:
 		raise RuntimeError(f"Failed to generate experiment: {e}")
@@ -95,7 +93,7 @@ def set_json_config(config: str, e_id: str, e_version: str, url: str):
 	'''Set a JSON config (Chaos Toolkit, MiSArch or global)
 	
 	Arguments:
-	config: relative path to the config file from experiments or absolute path
+	config: relative path to the config file from experiments directory or absolute path
 	url: URL of the API endpoint
 	'''
 	conf_path = make_path_absolute(EXPERIMENTS_DIR, config)
@@ -117,11 +115,10 @@ def set_json_config(config: str, e_id: str, e_version: str, url: str):
 				return raw.decode(errors='replace')
 	except Exception as e:
 		raise RuntimeError((f"Failed to update config at {url}: {e}"))
-	
+		
+
 def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
-	'''Set the gatling config of an experiment. Kotlin scripts and user steps CSV are base64 encoded and packaged into a JSON body
-	
-	'''
+	'''Set the gatling config of an experiment. Kotlin scripts and user steps CSV are base64 encoded and packaged into a JSON body'''
 	conf_obj = []
 	for variant in config:
 		script_path = make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles", variant['loadScript']))
@@ -136,7 +133,6 @@ def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
 		variant_obj['encodedUserStepsFileContent'] = read_and_b64_encode(user_path)
 		conf_obj.append(variant_obj)
 		
-	#url = f"{URL}/experiment/{e_id}/{e_version}/gatlingConfig"
 	body = json.dumps(conf_obj).encode('utf-8')
 	headers = {"Content-Type": "application/json"}
 	req = urllib.request.Request(url, data=body, headers=headers, method="PUT")
@@ -162,13 +158,10 @@ def start_experiment(e_id: str, e_version: str):
 	except Exception as e:
 		raise RuntimeError(f"Failed to start experiment")
 	
-# wait for experiment to finish — server returns when finished; 504 means still running
-def wait_for_event(e_id: str, e_version: str):
-	"""Stream the event endpoint (SSE) and return on first `data:` field.
 
-	This implementation uses `urllib3` directly and parses SSE lines.
-	It returns parsed JSON when possible, otherwise returns the raw text.
-	On errors it retries with exponential backoff up to `max_retries`.
+def wait_for_event(e_id: str, e_version: str):
+	"""Wait for the first server sent event which signifies the experiment is completed
+	Note: This works (somehow) but only because the function returns an requests.exceptions.MissingSchema
 	"""
 	event_url = f"{URL}/experiment/{e_id}/{e_version}/events"
 	headers = {"Accept": "text/event-stream"}
@@ -191,31 +184,25 @@ def wait_for_event(e_id: str, e_version: str):
 def run_experiment(config):
 	e_id, e_version = generate_experiment()
 	print(f"Created experiment {e_id}:{e_version}")
-	#set_json_config(
-	#	os.path.join('profiles',config['chaosConfig']),
-	#	e_id,
-	#	e_version,
-	#	f"{URL}/experiment/{e_id}/{e_version}/chaosToolkitConfig")
-	#set_json_config(
-	#	os.path.join('profiles',config['misarchConfig']),
-	#	e_id,
-	#	e_version,
-	#	f"{URL}/experiment/{e_id}/{e_version}/misarchExperimentConfig"
-    #)
-	#set_json_config(
-	#	os.path.join('profiles',config['globalConfig']),
-	#	e_id,
-	#	e_version,
-	#	f"{URL}/experiment/{e_id}/{e_version}/config"
-    #)
-	#set_gatling_config(
-	#	config['gatlingConfig'],
-	#	e_id,
-	#	e_version,
-	#	f"{URL}/experiment/{e_id}/{e_version}/gatlingConfig" )
+	set_json_config(
+		os.path.join('profiles',config['chaosConfig']),
+		e_id,
+		e_version,
+		f"{URL}/experiment/{e_id}/{e_version}/chaosToolkitConfig")
+	set_json_config(
+		os.path.join('profiles',config['misarchConfig']),
+		e_id,
+		e_version,
+		f"{URL}/experiment/{e_id}/{e_version}/misarchExperimentConfig"
+    )
+	set_gatling_config(
+		config['gatlingConfig'],
+		e_id,
+		e_version,
+		f"{URL}/experiment/{e_id}/{e_version}/gatlingConfig" )
 	
-	#start_experiment(e_id, e_version)
-	#wait_for_event(e_id, e_version)
+	start_experiment(e_id, e_version)
+	wait_for_event(e_id, e_version)
 
 	return (e_id, e_version)
 	
@@ -262,17 +249,14 @@ def main():
 			for experiment in d['experiments']:
 				print(f"Running experiment {experiment['testName']}")
 				start_time=datetime.datetime.now()
+				
 				e_id, e_version = run_experiment(experiment)
-				#start_experiment("43f37247-c081-46fd-a1ea-198764774240","v14")
-				#wait_for_event("43f37247-c081-46fd-a1ea-198764774240","v14")
 				
 				end_time=datetime.datetime.now()
 				print(f"Experiment {e_id}:{e_version} finished after {(end_time-start_time).total_seconds()}s")
-				#print("Finished")
-				# export_to_bucket(e_id, e_version)
+				# export_to_csv(e_id, e_version)
 	except FileNotFoundError as e:
 		print(e)
-		# print(f"File not found: {path}", file=sys.stderr)
 		sys.exit(2)
 	except json.JSONDecodeError as e:
 		print(f"Failed to parse JSON: {e}", file=sys.stderr)
