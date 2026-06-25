@@ -13,7 +13,7 @@ resource "helm_release" "redis" {
   auth:
     password: "${random_password.redis.result}"
   # Readiness re-enabled with fast timing (Redis binds port 6379 quickly even during RDB load).
-  # Liveness has a 300s initial delay to survive RDB loading from HDD.
+  # Liveness has a 60s initial delay to survive RDB loading
   master:
     readinessProbe:
       enabled: true
@@ -22,7 +22,7 @@ resource "helm_release" "redis" {
       failureThreshold: 3
     livenessProbe:
       enabled: true
-      initialDelaySeconds: 300
+      initialDelaySeconds: 60
       periodSeconds: 10
       failureThreshold: 3
     extraFlags:

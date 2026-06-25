@@ -10,17 +10,17 @@ Deploying the MiSArch microservice architecture on GKE resulted in cascading fai
 
 | Change | Reason |
 |--------|--------|
-| All providers use `config_path` with `config_context` conditional on `deployment_target` | Works on both GCP (via `gcloud container clusters get-credentials`) and minikube (via `minikube start`) |
+| Kubernetes/helm/kubectl providers use `host`/`cluster_ca_certificate`/`token` (GCP) or `config_path`/`config_context` (local) conditional on `deployment_target` | GCP uses access_token + cluster endpoint from remote state; local uses minikube kubeconfig |
 | GCP data sources (`terraform_remote_state`, `google_client_config`) use `count` conditional on `deployment_target` | Skipped entirely on local; prevents requiring GCS bucket credentials |
 | Google provider uses `try()` for project/region | Gracefully handles absent remote state without crashing the plan |
-| Helm provider uses argument syntax `kubernetes = { config_path = ... }` | Helm provider 3.x requires `kubernetes = { ... }` (argument with equals), not `kubernetes { ... }` (block) — the latter fails with "Unsupported block type" |
+| Helm provider uses `kubernetes = { host = ..., token = ..., config_path = ... }` argument syntax (conditional like kubernetes/kubectl) | Helm provider 3.x requires `kubernetes = { ... }` (argument with equals), not `kubernetes { ... }` (block) — the latter fails with "Unsupported block type" |
 
 ### `dapr.tf` — Redis Resilience + Dapr Connection Tuning
 
 | Change | Reason |
 |--------|--------|
 | Redis `readinessProbe` re-enabled (`periodSeconds: 5, failureThreshold: 3`) | Redis binds port 6379 quickly; fast readiness lets services discover Redis endpoints immediately |
-| Redis `livenessProbe` explicit config (`initialDelaySeconds: 300`) | 5-minute grace period to survive RDB snapshot reload from slow HDD storage without being killed |
+| Redis `livenessProbe` explicit config (`initialDelaySeconds: 60`) | 60s grace period to survive RDB snapshot reload (~8s observed); detects real failures quickly |
 | Dapr `statestore` component: added `dialTimeout: 30s`, `readTimeout: 15s`, `writeTimeout: 15s`, `maxRetries: 5`, `maxRetryBackoff: 5` | Prevents immediate Dapr sidecar fatal-exit when Redis is temporarily unavailable; retries with backoff |
 | Dapr `pubsub` + `experiment-config-pubsub` components: added `dialTimeout`, `maxRetries`, `maxRetryBackoff`, `publishRetryInterval` | Same resilience for pub/sub — transient Redis outages no longer crash Dapr sidecars. Note: `readTimeout` and `writeTimeout` intentionally omitted for pubsub because they kill Redis Stream blocking reads (XREAD BLOCK) |
 | Dapr tracing `samplingRate` made configurable via `var.dapr_tracing_sampling_rate` | Allows disabling tracing export in local development or enabling it when a collector is present |
