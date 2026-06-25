@@ -27,3 +27,11 @@ MISARCH_USER_VERSION="main"
 MISARCH_WISHLIST_VERSION="main"
 MISARCH_TESTDATA_VERSION="ghcr.io/misarch/testdata:main"
 
+deployment_target        = "gcp"
+storage_class_name       = "hdd"
+create_gcp_storage_class = true
+dapr_log_level           = "debug"
+otel_log_level           = "info"
+otel_disabled            = false
+dapr_tracing_sampling_rate = "1"
+otel_collector_mode       = "gcp"

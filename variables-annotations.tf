@@ -3,13 +3,18 @@ locals {
     "dapr.io/enabled"               = "true"
     "dapr.io/http-port"             = "3500"
     "dapr.io/config"                = "${local.dapr_general_config_name}"
-    "dapr.io/log-level"             = "debug"
+    "dapr.io/log-level"             = var.dapr_log_level
     "dapr.io/http-read-buffer-size" = "20" # KB, apparently the default of 4KB is too small in our usecase
 
-    "dapr.io/sidecar-liveness-probe-threshold"      = "10"
-    "dapr.io/sidecar-liveness-probe-delay-seconds"  = "10"
-    "dapr.io/sidecar-readiness-probe-threshold"     = "10"
-    "dapr.io/sidecar-readiness-probe-delay-seconds" = "10"
+    "dapr.io/sidecar-liveness-probe-threshold"        = "3"
+    "dapr.io/sidecar-liveness-probe-delay-seconds"    = "30"
+    "dapr.io/sidecar-liveness-probe-period-seconds"   = "10"
+    "dapr.io/sidecar-readiness-probe-threshold"       = "3"
+    "dapr.io/sidecar-readiness-probe-delay-seconds"   = "30"
+    "dapr.io/sidecar-readiness-probe-period-seconds"  = "10"
+    "dapr.io/sidecar-startup-probe-delay-seconds"     = "10"
+    "dapr.io/sidecar-startup-probe-threshold"         = "12"
+    "dapr.io/sidecar-startup-probe-period-seconds"    = "10"
   }
 }
 

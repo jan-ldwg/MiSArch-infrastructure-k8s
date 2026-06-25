@@ -77,12 +77,72 @@ variable "RABBITMQ_ERLANG_COOKIE" {
 
 variable "cluster_bucket_id"{
   type = string
-  description = "Bucket with the credentials to the cluster"
+  description = "Bucket with the credentials to the cluster (GCP only)"
+  default = ""
 }
 
 variable "cluster_bucket_prefix"{
   type = string
-  description = "Prefix for the credentials in the bucket "
+  description = "Prefix for the credentials in the bucket (GCP only)"
+  default = ""
+}
+
+variable "deployment_target" {
+  type        = string
+  description = "Deployment target: 'gcp' or 'local'"
+  default     = "gcp"
+
+  validation {
+    condition     = contains(["gcp", "local"], var.deployment_target)
+    error_message = "deployment_target must be 'gcp' or 'local'."
+  }
+}
+
+variable "storage_class_name" {
+  type        = string
+  description = "Kubernetes StorageClass name for persistent volumes"
+  default     = "standard"
+}
+
+variable "create_gcp_storage_class" {
+  type        = bool
+  description = "Create the GCP-specific 'hdd' StorageClass (pd-standard)"
+  default     = false
+}
+
+variable "dapr_log_level" {
+  type        = string
+  description = "Dapr sidecar log level (debug, info, warn, error)"
+  default     = "debug"
+}
+
+variable "otel_log_level" {
+  type        = string
+  description = "OpenTelemetry log level"
+  default     = "info"
+}
+
+variable "otel_disabled" {
+  type        = bool
+  description = "Disable OpenTelemetry export (local development)"
+  default     = false
+}
+
+variable "dapr_tracing_sampling_rate" {
+  type        = string
+  description = "Dapr tracing sampling rate (0-1). Set to '0' to disable tracing export."
+  default     = "1"
+}
+
+variable "otel_collector_mode" {
+  type        = string
+  description = "OTEL collector deployment mode: 'gcp' (full Prometheus stack) or 'local' (debug exporter, no cluster RBAC)"
+  default     = "gcp"
+
+  validation {
+    condition     = contains(["gcp", "local"], var.otel_collector_mode)
+    error_message = "otel_collector_mode must be 'gcp' or 'local'."
+  }
 }
 
 locals {

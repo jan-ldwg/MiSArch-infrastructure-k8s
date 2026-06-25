@@ -12,10 +12,19 @@ resource "helm_release" "redis" {
     storageClass: "${local.storage_class_name}"
   auth:
     password: "${random_password.redis.result}"
-  # Everything depends on redis being ready quickly, so decrease the preset timelimit and rather let it fail a few times to save some setup time
+  # Readiness re-enabled with fast timing (Redis binds port 6379 quickly even during RDB load).
+  # Liveness has a 300s initial delay to survive RDB loading from HDD.
   master:
     readinessProbe:
-      enabled: false
+      enabled: true
+      initialDelaySeconds: 0
+      periodSeconds: 5
+      failureThreshold: 3
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 300
+      periodSeconds: 10
+      failureThreshold: 3
     extraFlags:
       - "--appendonly no"
       - "--save 900 1"
@@ -60,6 +69,16 @@ resource "kubectl_manifest" "dapr_state_config" {
         value: "redis-master:6379"
       - name: "redisPassword"
         value: ${random_password.redis.result}
+      - name: "dialTimeout"
+        value: "30s"
+      - name: "readTimeout"
+        value: "15s"
+      - name: "writeTimeout"
+        value: "15s"
+      - name: "maxRetries"
+        value: "5"
+      - name: "maxRetryBackoff"
+        value: "5"
   EOF
 }
 
@@ -81,6 +100,14 @@ resource "kubectl_manifest" "dapr_pubsub_config" {
         value: "redis-master:6379"
       - name: "redisPassword"
         value: ${random_password.redis.result}
+      - name: "dialTimeout"
+        value: "30s"
+      - name: "maxRetries"
+        value: "5"
+      - name: "maxRetryBackoff"
+        value: "5"
+      - name: "publishRetryInterval"
+        value: "1s"
   EOF
 }
 
@@ -102,6 +129,14 @@ resource "kubectl_manifest" "dapr_pubsub_config_experiment_config" {
         value: "redis-master:6379"
       - name: "redisPassword"
         value: ${random_password.redis.result}
+      - name: "dialTimeout"
+        value: "30s"
+      - name: "maxRetries"
+        value: "5"
+      - name: "maxRetryBackoff"
+        value: "5"
+      - name: "publishRetryInterval"
+        value: "1s"
   EOF
 }
 
@@ -115,7 +150,7 @@ resource "kubectl_manifest" "dapr_config" {
       namespace: "${local.namespace}"
     spec:
       tracing:
-        samplingRate: "1"
+        samplingRate: "${var.dapr_tracing_sampling_rate}"
         otel:
           endpointAddress: ${local.otel_collector_url}
           protocol: grpc
