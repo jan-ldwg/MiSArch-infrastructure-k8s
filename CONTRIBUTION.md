@@ -17,3 +17,15 @@
   - pinning all images to latest release version
   - updated testdata image to seed database with more than one product
 - initial draft of baseline presentation
+
+## Maxim Strzebkowski
+
+- Static code analysis
+- Static project architecture analysis
+- Local deployability of services for testing
+- Simplify redundant service code into single module
+- Fix dapr error message storm during failure
+- Added Probes:
+  - startup
+  - readiness
+  - liveness
