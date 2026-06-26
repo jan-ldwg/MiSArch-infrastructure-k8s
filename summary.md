@@ -71,8 +71,8 @@ Deploying the MiSArch microservice architecture on GKE resulted in cascading fai
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `deployment_target` | `"gcp"` | Switch between GCP and local provider configurations |
-| `storage_class_name` | `"standard"` | Override StorageClass for local environments |
-| `create_gcp_storage_class` | `false` | Conditionally create GCP-specific `hdd` class |
+| `storage_class_name` | `"hdd"` | Kubernetes StorageClass for persistent volumes; GCP default uses HDD to avoid SSD quota |
+| `create_gcp_storage_class` | `true` | Create the GCP-specific `hdd` StorageClass by default |
 | `dapr_log_level` | `"debug"` | Control Dapr sidecar verbosity |
 | `otel_log_level` | `"info"` | Set OTEL log level via env vars |
 | `otel_disabled` | `false` | Disable OTEL export entirely |
@@ -81,6 +81,15 @@ Deploying the MiSArch microservice architecture on GKE resulted in cascading fai
 
 `cluster_bucket_id` and `cluster_bucket_prefix` given empty-string defaults so they are not required for local deployments.
 
+### GCP as Default Deployment Target
+
+GCP is the primary deployment target. Variable defaults are now aligned so `terraform apply` produces a valid GCP configuration
+
+`local-dev.tfvars` overrides everything back to local-appropriate values (`storage_class_name = "standard"`, `create_gcp_storage_class = false`, `deployment_target = "local"`, etc.). The `MISARCH_ORDER_VERSION = "main"` override was removed — pinned SHA digests in `variables-versions.tf` are authoritative.
+
+### `modules/misarch-service` — Reusable Deployment Template
+
+The 16 standard microservices share an identical deployment structure (main container + ECS sidecar, HTTP health probes, same resource limits). Instead of duplicating the `kubernetes_deployment` definition 16 times, a shared module generates each deployment from a small set of per-service inputs (name, image, configmaps, labels, annotations). Services with different requirements (gateway, keycloak, experiment services) use raw Kubernetes resources.
 ## Deployment Instructions
 
 ### Prerequisites
@@ -103,17 +112,7 @@ terraform apply
 
 This creates the GKE cluster, node pool, and outputs the cluster endpoint, CA certificate, and project metadata to a GCS backend bucket.
 
-**Step 2: Install MiSArch**
-
-```sh
-cd ..  # back to root
-terraform init
-terraform apply -var-file=main-deployment.tfvars
-```
-
-This deploys all 20+ microservices, databases, Redis, Dapr, ingress, monitoring stack, and the OTEL collector to the GKE cluster. Takes 5-10 minutes.
-
-**Step 3: Access the application**
+**Step 2: Access the application**
 
 ```sh
 terraform output global_domain
@@ -121,7 +120,7 @@ terraform output global_domain
 
 Open the printed URL in a browser. Default credentials: `admin` / `admin` (Keycloak).
 
-**Step 4: Seed test data** (runs automatically as a Kubernetes Job during apply; re-run if needed)
+**Step 3: Seed test data** (runs automatically as a Kubernetes Job during apply; re-run if needed)
 
 ```sh
 kubectl delete job misarch-testdata -n misarch
@@ -258,27 +257,6 @@ terraform apply -var-file=local-dev.tfvars \
   -target=module.misarch_<NAME2>
 ```
 
-#### Quick reference — service names
-
-| Service | DB type | Command substitution |
-|---------|---------|---------------------|
-| address | PostgreSQL | `misarch_address_db` |
-| catalog | PostgreSQL | `misarch_catalog_db` |
-| discount | PostgreSQL | `misarch_discount_db` |
-| inventory | MongoDB | `misarch_inventory_db` |
-| invoice | MongoDB | `misarch_invoice_db` |
-| media | MongoDB | `misarch_media_db` |
-| notification | PostgreSQL | `misarch_notification_db` |
-| order | MongoDB | `misarch_order_db` |
-| payment | MongoDB | `misarch_payment_db` |
-| return | PostgreSQL | `misarch_return_db` |
-| review | MongoDB | `misarch_review_db` |
-| shipment | PostgreSQL | `misarch_shipment_db` |
-| shoppingcart | MongoDB | `misarch_shoppingcart_db` |
-| tax | PostgreSQL | `misarch_tax_db` |
-| user | PostgreSQL | `misarch_user_db` |
-| wishlist | MongoDB | `misarch_wishlist_db` |
-
 #### Example — deploy order, catalog, and payment:
 ```sh
 terraform apply -var-file=local-dev.tfvars \
@@ -301,15 +279,6 @@ terraform apply -var-file=local-dev.tfvars \
   -target=kubernetes_config_map.misarch_payment_ecs_env_vars \
   -target=module.misarch_payment
 ```
-
-#### Minimal resource footprint
-
-| Service count | Deployments | DBs | Target lines |
-|---------------|-------------|-----|-------------|
-| 1 service | 1 | 1 | 10 |
-| 2 services | 2 | 2 | 14 |
-| 3 services | 3 | 3 | 18 |
-| N services | N | N | 6 + 4×N |
 
 ### Testing Services Locally via Dapr
 
@@ -377,7 +346,7 @@ This returns the list of pubsub topics the service is subscribed to, useful for 
 | `ROOT_DOMAIN` | `"http://localhost:8080"` | No cloud LB available |
 | `storage_class_name` | `"standard"` | minikube's default StorageClass |
 | `create_gcp_storage_class` | `false` | Skip GCP CSI provisioner |
-| `dapr_log_level` | `"info"` | Reduce Dapr log noise |
+| `dapr_log_level` | `"error"` | Reduce Dapr log noise |
 | `otel_log_level` | `"error"` | Minimal OTEL log output |
 | `otel_disabled` | `false` | OTEL enabled (local collector deployed) |
 | `otel_collector_mode` | `"local"` | Debug exporter, no Prometheus RBAC |
@@ -385,50 +354,22 @@ This returns the list of pubsub topics the service is subscribed to, useful for 
 
 ## Probe Testing
 
-The `misarch-service` module adds startup, liveness, and readiness probes to every deployment. You can verify they work correctly:
-
-### Setup: separate liveness path
-
-The module supports a separate `liveness_probe_path` (defaults to `probe_path`) so liveness can be tested independently without breaking readiness (which would cause `terraform apply` to hang on `wait_for_rollout`).
-
-**Temporarily edit the module call** for any service to override:
-
-```hcl
-  liveness_probe_path             = "/nonexistent"
-  liveness_initial_delay_seconds  = 10
-```
-
-Then apply:
+The `misarch-service` module adds startup, liveness, and readiness probes to every deployment. Probe configuration is hardcoded in the module (all 16 standard services use `http_get /health:8080` with identical timing). Probes are verified in-production by checking pod events:
 
 ```sh
-terraform apply -var-file=local-dev.tfvars -target=module.misarch_<service> -auto-approve
+kubectl describe pod -n misarch -l app=misarch-<service> | grep -E "Liveness|Readiness|Startup"
+# Expected: all three probes show successful results after initial startup
 ```
 
-### What happens
-
-| Step | Prob | Path | Result |
-|---|---|---|---|
-| Pod starts | Startup | `/health` | Passes after boot → liveness/readiness activated |
-| Rollout | Readiness | `/health` | Pod becomes Ready → Terraform apply completes |
-| ~10s after startup | Liveness | `/nonexistent` | 404 response → fails 3× → **container killed** |
+To test liveness-probe behavior on a different service (gateway uses `tcp_socket:8080`), check:
 
 ```sh
-# Watch for the restart:
-kubectl get pods -n misarch -l app=misarch-<service> -w
-
-# Expected: 3/3 Running → 2/3 Running → restarts increment → cycle repeats
+kubectl get pods -n misarch -l app=misarch-gateway -w
+# Gateway has a readiness probe (tcp_socket:8080, initialDelay=30s, period=10s)
+# but no liveness or startup probe — it relies on the Dapr sidecar for health management
 ```
 
-Verify via events:
-
-```sh
-kubectl describe pod -n misarch -l app=misarch-<service> | grep -E "Liveness probe failed|Killing"
-# Expected: "Container misarch-<service> failed liveness probe, will be restarted"
-```
-
-### Revert
-
-Remove the two override lines and re-apply. The pod returns to stable `3/3 Running`.
+Services not using the standard module (gateway, keycloak, experiment-config, experiment-executor, gatling-executor, chaostoolkit-executor) define their probes individually in their respective `.tf` files.
 
 ---
 
