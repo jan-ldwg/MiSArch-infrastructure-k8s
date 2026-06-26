@@ -14,5 +14,3 @@ otel_disabled            = false
 dapr_tracing_sampling_rate = "1"
 otel_collector_mode       = "local"
 
-# Override image versions to use 'main' tags (no pinned SHA digests)
-MISARCH_ORDER_VERSION = "main"

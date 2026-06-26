@@ -101,13 +101,13 @@ variable "deployment_target" {
 variable "storage_class_name" {
   type        = string
   description = "Kubernetes StorageClass name for persistent volumes"
-  default     = "standard"
+  default     = "hdd"
 }
 
 variable "create_gcp_storage_class" {
   type        = bool
   description = "Create the GCP-specific 'hdd' StorageClass (pd-standard)"
-  default     = false
+  default     = true
 }
 
 variable "dapr_log_level" {
