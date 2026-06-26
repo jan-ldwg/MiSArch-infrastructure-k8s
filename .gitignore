@@ -36,3 +36,10 @@ override.tf.json
 terraform.rc
 
 .DS_Store
+
+
+## Python Specific Files ##
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
