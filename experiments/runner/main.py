@@ -20,6 +20,25 @@ LOCAL_PORT = 4000
 REMOTE_PORT = 8888
 URL = f"http://127.0.0.1:{LOCAL_PORT}"
 EXPERIMENTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
+REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+PRODUCT_QUERY='''query MyQuery {
+  products {
+    nodes {
+      defaultVariant {
+        inventoryCount
+      }
+    }
+  }
+}'''
+
+
+
+REALM = "Misarch"
+CLIENT_ID = "frontend"
+USERNAME = "gatling"
+PASSWORD = "123"
+
 
 def make_path_absolute(base_path: str, filename: str)->str:
 	if os.path.isabs(filename):
@@ -43,6 +62,92 @@ def read_and_b64_encode(file_path: str):
 			return encoded
 		except Exception as e:
 			raise RuntimeError(f"Unexpected error reading file {file_path}: {e}")
+		
+def login(cluster_url: str):
+    url = f"{cluster_url}/keycloak/realms/{REALM}/protocol/openid-connect/token"
+    data = urllib.parse.urlencode({
+        "grant_type": "password",
+        "client_id": CLIENT_ID,
+        "username": USERNAME,
+        "password": PASSWORD,
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def refresh(cluster_url: str, refresh_token: str):
+    url = f"{cluster_url}/keycloak/realms/{REALM}/protocol/openid-connect/token"
+    data = urllib.parse.urlencode({
+        "grant_type": "refresh_token",
+        "client_id": CLIENT_ID,
+        "refresh_token": refresh_token,
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        method="POST",
+    )
+
+    with urllib.request.urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def graphql_query(cluster_url: str, tokens, query, variables=None):
+    payload = json.dumps({
+        "query": query,
+        "variables": variables or {}
+    }).encode("utf-8")
+
+    def send_request(access_token):
+        request = urllib.request.Request(
+            f"{cluster_url}/api/graphql",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+
+        with urllib.request.urlopen(request) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+    try:
+        return send_request(tokens["access_token"])
+
+    except urllib.error.HTTPError as e:
+        if e.code != 401:
+            raise
+
+        print("Access token expired. Refreshing...")
+        new_tokens = refresh(tokens["refresh_token"])
+        # Update the existing dict so the caller automatically has the new tokens
+        tokens.update(new_tokens)
+        return send_request(tokens["access_token"])
+	
+def read_terraform_output(name: str, terraform_dir=None):
+	"""Read a Terraform output value from the repository root or given directory."""
+	if terraform_dir is None:
+		terraform_dir = REPO_ROOT
+	cmd = ["terraform", "output", "-raw", name]
+	try:
+		result = subprocess.run(cmd, cwd=terraform_dir, capture_output=True, text=True, check=True)
+		return result.stdout.strip()
+	except FileNotFoundError:
+		raise RuntimeError("terraform command not found; ensure Terraform is installed and on PATH")
+	except subprocess.CalledProcessError as e:
+		stderr = e.stderr.strip() if e.stderr else str(e)
+		raise RuntimeError(f"Failed to read Terraform output '{name}': {stderr}")
 		
 		
 def start_port_forward():
@@ -225,6 +330,20 @@ def main():
 	signal.signal(signal.SIGINT, _cleanup)
 	signal.signal(signal.SIGTERM, _cleanup)
 
+	# CLI: expect a filename (relative to the top-level `experiments/` folder)
+	parser = argparse.ArgumentParser(prog="Experiment runner", description="Run automated experiments against the MiSArch system")
+	parser.add_argument('-f', '--file', required=True, help='Filename inside the experiments directory')
+	args = parser.parse_args()
+
+	path = make_path_absolute(EXPERIMENTS_DIR, args.file)
+
+	try:
+		cluster_url = read_terraform_output("global_domain")
+		print(f"Terraform global_domain: {cluster_url}")
+	except RuntimeError as e:
+		print(f"Warning: could not read Terraform global_domain: {e}", file=sys.stderr)
+		cluster_url = None
+
 	print(f"Starting port-forward -n {KUBECTL_NAMESPACE} {KUBECTL_SVC} {LOCAL_PORT}:{REMOTE_PORT}...")
 	pf_proc = start_port_forward()
 	if pf_proc is None:
@@ -234,27 +353,29 @@ def main():
 		if not ok:
 			print("Port-forward did not open within timeout", file=sys.stderr)
 
-	# CLI: expect a filename (relative to the top-level `experiments/` folder)
-	parser = argparse.ArgumentParser(prog="Experiment runner", description="Run automated experiments against the MiSArch system")
-	parser.add_argument('-f', '--file', required=True, help='Filename inside the experiments directory')
-	args = parser.parse_args()
-
-	path = make_path_absolute(EXPERIMENTS_DIR, args.file)
 
 	print(f"Opening experiment file: {path}")
+
+	credentials = login(cluster_url)
 
 	try:
 		with open(path, 'r') as f:
 			d = json.load(f)
 			for experiment in d['experiments']:
 				print(f"Running experiment {experiment['testName']}")
+				start_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
 				start_time=datetime.datetime.now()
 				
 				e_id, e_version = run_experiment(experiment)
 				
 				end_time=datetime.datetime.now()
+				end_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
 				print(f"Experiment {e_id}:{e_version} finished after {(end_time-start_time).total_seconds()}s")
+				print(start_products['data']['products']['nodes'])
+				print(end_products['data']['products']['nodes'])
 				# export_to_csv(e_id, e_version)
+				# export all config files to folder
+				# expoert start and end products as json to folder
 	except FileNotFoundError as e:
 		print(e)
 		sys.exit(2)
