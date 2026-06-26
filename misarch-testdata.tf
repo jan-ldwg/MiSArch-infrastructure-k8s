@@ -10,7 +10,7 @@
 resource "kubernetes_job" "misarch_testdata" {
   depends_on = [
     kubernetes_deployment.keycloak,
-    module.misarch_gateway,
+    kubernetes_deployment.misarch_gateway,
   ]
 
   metadata {

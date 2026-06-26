@@ -11,15 +11,15 @@ resource "kubernetes_service" "misarch_experiment_config" {
     }
 
     port {
-      name       = "http"
-      port       = 80
+      name        = "http"
+      port        = 80
       target_port = 8080
     }
   }
 }
 
 resource "kubernetes_deployment" "misarch_experiment_config" {
-  depends_on = [terraform_data.dapr, kubernetes_deployment.keycloak, module.misarch_gateway]
+  depends_on = [terraform_data.dapr, kubernetes_deployment.keycloak, kubernetes_deployment.misarch_gateway]
   metadata {
 
     name      = local.misarch_experiment_config_service_name
