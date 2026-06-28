@@ -426,22 +426,33 @@ How is a scenario structured?
 val abortedBuyProcessScenario = scenario("abortedBuyProcessScenario")
 🔄 Scenario Steps: The scenario consists of a series of steps that define the behavior of users in the system, which are chained together using Kotlin's . operator:
 
-1️⃣ exec {...}: Executes a block of code, which can be used to perform actions such as storing session data.
+1️⃣ `exec {...}`: Executes a block of code, which can be used to perform actions such as storing session data.
+
+```kotlin
 .exec { session ->
 // Store and retrieve session data
 session.getString("my-key", "my-value")
 session.set("my-other-key", "my-other-value")
 }
-2️⃣ exec (http()): Executes the HTTP request based on the http() chain. The response of a request can be stored in the session object using the check() method and retrieved in following .exec{...} blocks.
+```
+
+2️⃣ `exec (http())`: Executes the HTTP request based on the http() chain. The response of a request can be stored in the session object using the check() method and retrieved in following .exec{...} blocks.
+
+```kotlin
 .exec(
 http("Get Example")
 .get("http://example.org")
 .formParam("example", "example")
 .check(jsonPath("$.example").saveAs("my-key"))
-
 )
-3️⃣ .pause(Duration.ofMillis(X), Duration.ofMillis(X)): Pauses the scenario for a specified duration, which is in between the range of the first duration and the second duration. This can be used to simulate user think time or delays between requests.
+```
+
+3️⃣ `.pause(Duration.ofMillis(X), Duration.ofMillis(X))`: Pauses the scenario for a specified duration, which is in between the range of the first duration and the second duration. This can be used to simulate user think time or delays between requests.
+
+```kotlin
 .pause(Duration.ofMillis(1000), Duration.ofMillis(2000))
+```
+
 ⚠️ Note: The steps must always be defined like this: exec {...} then exec(http()...) then .pause(Duration.ofMillis(X), Duration.ofMillis(X)), each in a new line in order for the MiSArch Experiment Tool to correctly parse the scenario and calculate the approximate requests.
 
 💡 Tip: If you want to create complex custom scenarios, leveraging all features of the Gatling DSL, you should use a proper Kotlin IDE to write the scenario.

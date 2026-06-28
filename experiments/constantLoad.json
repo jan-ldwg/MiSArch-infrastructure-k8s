@@ -1,0 +1,16 @@
+{
+  "experiments": [
+    {
+      "testName": "Basic test",
+      "description": "Test with moderate load and no fault injections",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic75-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json"
+    }
+  ]
+}
