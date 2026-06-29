@@ -10,15 +10,18 @@ import argparse
 import os
 import datetime
 import base64
+import shutil
 import requests
 from sseclient import SSEClient
+from influxdb_client import InfluxDBClient
+from influxdb_client.client.exceptions import InfluxDBError
 
-
-KUBECTL_SVC = "svc/misarch-experiment-executor"
 KUBECTL_NAMESPACE = "misarch"
-LOCAL_PORT = 4000
-REMOTE_PORT = 8888
-URL = f"http://127.0.0.1:{LOCAL_PORT}"
+PORT_FORWARDS = [
+    ("svc/misarch-experiment-executor", 4000, 8888),
+    ("svc/influxdb", 4001, 80),
+]
+URL = f"http://127.0.0.1:{PORT_FORWARDS[0][1]}"
 EXPERIMENTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
@@ -33,11 +36,16 @@ PRODUCT_QUERY='''query MyQuery {
 }'''
 
 
-
+# Keycloak
 REALM = "Misarch"
 CLIENT_ID = "frontend"
 USERNAME = "gatling"
 PASSWORD = "123"
+
+# InfluxDB
+INFLUX_ORG = "misarch"
+INFLUX_BUCKET = "gatling"
+INFLUX_URL = f"http://127.0.0.1:{PORT_FORWARDS[1][1]}"
 
 
 def make_path_absolute(base_path: str, filename: str)->str:
@@ -63,6 +71,41 @@ def read_and_b64_encode(file_path: str):
 		except Exception as e:
 			raise RuntimeError(f"Unexpected error reading file {file_path}: {e}")
 		
+
+def copy_file_to_destination(src_path: str, destination_root: str, base_dir: str | None = None):
+	abs_src = os.path.abspath(src_path)
+	if base_dir:
+		abs_base = os.path.abspath(base_dir)
+		if os.path.commonpath([abs_base, abs_src]) == abs_base:
+			rel_path = os.path.relpath(abs_src, abs_base)
+		else:
+			rel_path = os.path.basename(abs_src)
+	else:
+		rel_path = os.path.basename(abs_src)
+
+	dest_path = os.path.join(destination_root, rel_path)
+	os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+	shutil.copy2(abs_src, dest_path)
+	return dest_path
+
+
+def copy_experiment_files(experiment_json_path: str, experiment_config: dict, experiment_path: str):
+	"""Copy the experiment JSON and all files referenced by this experiment into experiment_path."""
+	os.makedirs(experiment_path, exist_ok=True)
+	copy_file_to_destination(experiment_json_path, experiment_path, EXPERIMENTS_DIR)
+
+	for config_key in ("chaosConfig", "misarchConfig"):
+		file_ref = experiment_config.get(config_key)
+		if file_ref:
+			copy_file_to_destination(make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles",file_ref)), experiment_path, EXPERIMENTS_DIR)
+
+	for variant in experiment_config.get("gatlingConfig", []):
+		for script_key in ("loadScript", "userSteps"):
+			file_ref = variant.get(script_key)
+			if file_ref:
+				copy_file_to_destination(make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles",file_ref)), experiment_path, EXPERIMENTS_DIR)
+
+
 def login(cluster_url: str):
     url = f"{cluster_url}/keycloak/realms/{REALM}/protocol/openid-connect/token"
     data = urllib.parse.urlencode({
@@ -135,6 +178,26 @@ def graphql_query(cluster_url: str, tokens, query, variables=None):
         tokens.update(new_tokens)
         return send_request(tokens["access_token"])
 	
+def export_influxdb_to_csv(e_id: str, e_version: str, output_path: str):
+	token = read_terraform_output("influxdb_admin_token")
+	with InfluxDBClient(url=INFLUX_URL, token=token, org=INFLUX_ORG) as client:
+		query = f'from(bucket:"{INFLUX_BUCKET}") |> range(start: 0) |> filter(fn:(r) => r.testUUID == "{e_id}")'
+		try:
+			query_client = client.query_api()
+			response = query_client.query_raw(query=query, org=INFLUX_ORG)
+		except InfluxDBError as e:
+			raise RuntimeError(f"Influx query failed: {e}")
+	
+		csv_text = response.data.decode("utf-8").rstrip()
+	
+		if not csv_text:
+			raise RuntimeError("Influx query retruned no data")
+	
+		with open(output_path, "x") as f:
+			f.write(csv_text)
+			f.write("\n")
+
+	
 def read_terraform_output(name: str, terraform_dir=None):
 	"""Read a Terraform output value from the repository root or given directory."""
 	if terraform_dir is None:
@@ -150,15 +213,15 @@ def read_terraform_output(name: str, terraform_dir=None):
 		raise RuntimeError(f"Failed to read Terraform output '{name}': {stderr}")
 		
 		
-def start_port_forward():
-	'''Set up a port forward using kubectl'''
+def start_port_forward(svc: str, local_port: int, remote_port: int):
+	'''Set up a port forward using kubectl.'''
 	cmd = [
 		"kubectl",
 		"port-forward",
 		"-n",
 		KUBECTL_NAMESPACE,
-		KUBECTL_SVC,
-		f"{LOCAL_PORT}:{REMOTE_PORT}",
+		svc,
+		f"{local_port}:{remote_port}",
 	]
 	try:
 		p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -166,6 +229,26 @@ def start_port_forward():
 	except FileNotFoundError:
 		print("kubectl not found in PATH", file=sys.stderr)
 		return None
+
+
+def start_port_forwards(forwards):
+	processes = []
+	for svc, local_port, remote_port in forwards:
+		print(f"Starting port-forward -n {KUBECTL_NAMESPACE} {svc} {local_port}:{remote_port}...")
+		p = start_port_forward(svc, local_port, remote_port)
+		if p is None:
+			continue
+		processes.append((svc, local_port, p))
+	return processes
+
+
+def wait_for_port_forward_processes(processes, timeout: float = 10.0):
+	for svc, local_port, proc in processes:
+		if proc.poll() is not None:
+			print(f"Port-forward for {svc} exited immediately.", file=sys.stderr)
+			continue
+		if not wait_for_port("127.0.0.1", local_port, timeout=timeout):
+			print(f"Port-forward for {svc} did not open port {local_port} within timeout", file=sys.stderr)
 
 
 def wait_for_port(host: str, port: int, timeout: float = 10.0):
@@ -251,6 +334,7 @@ def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
 	except Exception as e:
 		raise RuntimeError((f"Failed to update config at {url}: {e}"))
 	
+
 def start_experiment(e_id: str, e_version: str):
 	start_url=f"{URL}/experiment/{e_id}/{e_version}/start"
 	start_req=urllib.request.Request(start_url, method="POST")
@@ -283,7 +367,6 @@ def wait_for_event(e_id: str, e_version: str):
 			return
 	except requests.exceptions.MissingSchema as e:
 		return
-		
 	
 	
 def run_experiment(config):
@@ -310,20 +393,23 @@ def run_experiment(config):
 	wait_for_event(e_id, e_version)
 
 	return (e_id, e_version)
-	
-	
         
 
+def cleanup_port_forward_processes(processes):
+	for svc, local_port, proc in processes:
+		if proc.poll() is None:
+			proc.terminate()
+			try:
+				proc.wait(timeout=2)
+			except Exception:
+				proc.kill()
+
+
 def main():
-	pf_proc = None
+	port_forward_processes = []
 
 	def _cleanup(signum=None, frame=None):
-		if pf_proc and pf_proc.poll() is None:
-			pf_proc.terminate()
-			try:
-				pf_proc.wait(timeout=2)
-			except Exception:
-				pf_proc.kill()
+		cleanup_port_forward_processes(port_forward_processes)
 		if signum:
 			sys.exit(0)
 
@@ -344,15 +430,11 @@ def main():
 		print(f"Warning: could not read Terraform global_domain: {e}", file=sys.stderr)
 		cluster_url = None
 
-	print(f"Starting port-forward -n {KUBECTL_NAMESPACE} {KUBECTL_SVC} {LOCAL_PORT}:{REMOTE_PORT}...")
-	pf_proc = start_port_forward()
-	if pf_proc is None:
-		print("Skipping port-forward; attempting to contact localhost directly.")
+	port_forward_processes = start_port_forwards(PORT_FORWARDS)
+	if not port_forward_processes:
+		print("Skipping port-forwards; attempting to contact localhost directly.")
 	else:
-		ok = wait_for_port("127.0.0.1", LOCAL_PORT, timeout=10)
-		if not ok:
-			print("Port-forward did not open within timeout", file=sys.stderr)
-
+		wait_for_port_forward_processes(port_forward_processes, timeout=10)
 
 	print(f"Opening experiment file: {path}")
 
@@ -361,6 +443,7 @@ def main():
 	try:
 		with open(path, 'r') as f:
 			d = json.load(f)
+			results_path = os.path.abspath(os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'results')))
 			for experiment in d['experiments']:
 				print(f"Running experiment {experiment['testName']}")
 				start_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
@@ -369,12 +452,13 @@ def main():
 				e_id, e_version = run_experiment(experiment)
 				
 				end_time=datetime.datetime.now()
+				experiment_path = os.path.join(results_path, f"{e_id}:{e_version}")
+				copy_experiment_files(path, experiment, experiment_path)
+				export_influxdb_to_csv(e_id, e_version, os.path.join(experiment_path, "results.csv"))
 				end_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
 				print(f"Experiment {e_id}:{e_version} finished after {(end_time-start_time).total_seconds()}s")
 				print(start_products['data']['products']['nodes'])
 				print(end_products['data']['products']['nodes'])
-				# export_to_csv(e_id, e_version)
-				# export all config files to folder
 				# expoert start and end products as json to folder
 	except FileNotFoundError as e:
 		print(e)
@@ -382,6 +466,8 @@ def main():
 	except json.JSONDecodeError as e:
 		print(f"Failed to parse JSON: {e}", file=sys.stderr)
 		sys.exit(3)
+	finally:
+		cleanup_port_forward_processes(port_forward_processes)
 		
         
 if __name__ == "__main__":
