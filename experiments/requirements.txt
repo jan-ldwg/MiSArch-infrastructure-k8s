@@ -1,0 +1,7 @@
+pandas == 3.0.4
+matplotlib == 3.11.0
+influxdb-client>=1.50.0
+pymongo>=4.0
+psycopg2-binary>=2.9
+sseclient == 0.0.27
+

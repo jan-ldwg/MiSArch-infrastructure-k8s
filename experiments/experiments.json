@@ -1,0 +1,36 @@
+{
+  "experiments": [
+    {
+      "testName": "Basic test",
+      "description": "Test with moderate load and no fault injections",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/abortedBuyProcessScenario.kt",
+          "userSteps": "gatling/userSteps60s.csv"
+        },
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/userSteps60s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json"
+    },
+    {
+      "testName": "Longer basic test",
+      "description": "Test with moderate load and no fault injections",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/abortedBuyProcessScenario.kt",
+          "userSteps": "gatling/userSteps180s.csv"
+        },
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/userSteps60s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json"
+    }
+  ]
+}
