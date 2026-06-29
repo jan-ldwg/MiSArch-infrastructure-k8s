@@ -1,0 +1,52 @@
+{
+  "experiments": [
+    {
+      "testName": "Low load",
+      "description": "Test with low load and no fault injections",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/abortedBuyProcessScenario.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        },
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json"
+    },
+    {
+      "testName": "Medium load",
+      "description": "Test with medium load and no fault injections",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/abortedBuyProcessScenario.kt",
+          "userSteps": "gatling/realistic75-600s.csv"
+        },
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/realistic75-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json"
+    },
+    {
+      "testName": "High load",
+      "description": "Test with high load and no fault injections",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/abortedBuyProcessScenario.kt",
+          "userSteps": "gatling/realistic250-600s.csv"
+        },
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/realistic250-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json"
+    }
+  ]
+}

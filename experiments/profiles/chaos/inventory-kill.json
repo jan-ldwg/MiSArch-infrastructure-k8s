@@ -1,0 +1,36 @@
+{
+  "title": "__TITLE__",
+  "description": "__DESCRIPTION__",
+  "steady-state-hypothesis": {
+    "title": "Inventory deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "Inventory pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-inventory", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill inventory pods during peak load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-inventory",
+          "ns": "misarch"
+        }
+      },
+      "pauses": { "before": 80, "after": 45 }
+    }
+  ]
+}
