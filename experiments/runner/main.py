@@ -15,11 +15,13 @@ import requests
 from sseclient import SSEClient
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.exceptions import InfluxDBError
+from database_snapshot_creator.snapshot_db import snapshot_mongodb
 
 KUBECTL_NAMESPACE = "misarch"
 PORT_FORWARDS = [
     ("svc/misarch-experiment-executor", 4000, 8888),
     ("svc/influxdb", 4001, 80),
+	("pod/inventory-db-0", 27017, 27017)
 ]
 URL = f"http://127.0.0.1:{PORT_FORWARDS[0][1]}"
 EXPERIMENTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
@@ -444,22 +446,32 @@ def main():
 		with open(path, 'r') as f:
 			d = json.load(f)
 			results_path = os.path.abspath(os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'results')))
+
+			#inventory_db_password = read_terraform_output("mongodb_root_password_inventory")
+			#inventory_db_path = f"mongodb://root:{inventory_db_password}@localhost:27017/?directConnection=true&authSource=admin"
 			for experiment in d['experiments']:
 				print(f"Running experiment {experiment['testName']}")
 				start_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
+				#pre_inventory= snapshot_mongodb(inventory_db_path)
+
 				start_time=datetime.datetime.now()
-				
 				e_id, e_version = run_experiment(experiment)
-				
 				end_time=datetime.datetime.now()
+
 				experiment_path = os.path.join(results_path, f"{e_id}:{e_version}")
 				copy_experiment_files(path, experiment, experiment_path)
 				export_influxdb_to_csv(e_id, e_version, os.path.join(experiment_path, "results.csv"))
+				#post_inventory = snapshot_mongodb(inventory_db_path)
 				end_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
 				print(f"Experiment {e_id}:{e_version} finished after {(end_time-start_time).total_seconds()}s")
-				print(start_products['data']['products']['nodes'])
-				print(end_products['data']['products']['nodes'])
-				# expoert start and end products as json to folder
+				consistency_results= {}
+				consistency_results['before']=start_products['data']['products']['nodes'][0]['defaultVariant']
+				consistency_results['after']=end_products['data']['products']['nodes'][0]['defaultVariant']
+				with open(os.path.join(experiment_path, "consistency.json"), 'x') as f:
+					f.write(json.dumps(consistency_results))
+
+				#pre_inventory_json=json.dumps(pre_inventory, indent=2, ensure_ascii=False, default=str)
+				#post_inventory_json=json.dumps(post_inventory, indent=2, ensure_ascii=False, default=str)
 	except FileNotFoundError as e:
 		print(e)
 		sys.exit(2)
