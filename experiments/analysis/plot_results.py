@@ -36,27 +36,55 @@ import numpy as np
 from pathlib import Path
 
 # ── Style ─────────────────────────────────────────────────────────────────────
-BG       = "#1a1a2e"
-PANEL    = "#16213e"
-TEXT     = "#e0e0e0"
-GRID     = "#333355"
-COLOR_OK  = "#4CAF50"
-COLOR_KO  = "#F44336"
-COLOR_ALL = "#FF9800"
-COLORS   = ["#2196F3", "#F44336", "#4CAF50", "#FF9800", "#9C27B0"]
+BG       = "#ffffff"
+PANEL    = "#ffffff"
+TEXT     = "#000000"
+GRID     = "#b0b0b0"
+COLOR_OK  = "#1f77b4"
+COLOR_KO  = "#d62728"
+COLOR_ALL = "#7f7f7f"
+COLORS   = ["#1f77b4", "#ff7f0e", "#2ca02c", "#9467bd", "#8c564b"]
 LSTYLES  = ["-", "--", "-.", ":", "-"]
 
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "Palatino", "serif"],
+    "font.size": 10,
+    "axes.titlesize": 11,
+    "axes.labelsize": 10,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    "legend.fontsize": 8,
+    "figure.facecolor": BG,
+    "axes.facecolor": PANEL,
+    "savefig.facecolor": BG,
+    "grid.color": GRID,
+    "grid.linestyle": "--",
+    "grid.linewidth": 0.5,
+    "axes.edgecolor": "#000000",
+    "axes.linewidth": 0.8,
+})
+
 ENDPOINT_NAMES = {
-    "address":           "Address",
-    "createordermuta":   "Create Order",
-    "createshoppingc":   "Create Cart",
-    "get":               "Get (misc)",
-    "paymentinformat":   "Payment Info",
-    "placeordermutat":   "Place Order",
-    "product":           "Product",
+    "getadmintoken":     "Get Admin Token",
+    "createnewuser":     "Create User",
+    "getuserid":         "Get User Id",
+    "setpassword":       "Set Password",
+    "getbuyerrole":      "Get Buyer Role",
+    "getemployeerole":   "Get Employee Role",
+    "assignroles":       "Assign Roles",
+    "getaccesstoken":    "Get Access Token",
+    "frontpage":         "Frontpage",
     "products":          "Products",
-    "shipmentmethods":   "Shipment Methods",
+    "product":           "Product",
     "users":             "Users",
+    "addaddress":        "Add Address",
+    "address":           "Get Address",
+    "createshoppingc":   "Create Cart",
+    "shipmentmethods":   "Shipment Methods",
+    "paymentinformat":   "Payment Info",
+    "createordermuta":   "Create Order",
+    "placeordermutat":   "Place Order",
 }
 
 
@@ -113,11 +141,15 @@ def get_stat(data: dict, meas: str) -> float | None:
 
 def style_ax(ax, title):
     ax.set_facecolor(PANEL)
-    ax.set_title(title, color=TEXT, fontsize=10, fontweight="bold", pad=6)
-    ax.tick_params(colors=TEXT, labelsize=8)
+    ax.set_title(title, color=TEXT, fontsize=11, fontweight="semibold", pad=8)
+    ax.xaxis.label.set_color(TEXT)
+    ax.yaxis.label.set_color(TEXT)
+    ax.tick_params(colors=TEXT, labelsize=8, which="both")
     for spine in ax.spines.values():
         spine.set_edgecolor(GRID)
-    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.6)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(True, color=GRID, linestyle="--", linewidth=0.5, alpha=0.8)
 
 
 def make_fig(nrows, ncols, title, figsize=None):

@@ -22,7 +22,10 @@
   - updated gatling script to create new user for every simulated user journey
   - integrated csv export from Maxim
   - querying of inventoryCount from graphql before and after the experiment to check for data consistency with placed orders from gatling
+  - warm up configuration
 - set up overleaf project
+- extended visualization script to include all endpoints
+- debugged jaeger deployment
 
 ## Maryam
 
@@ -33,9 +36,9 @@
 - Static code analysis
 - Static project architecture analysis
 - Local deployability of services for testing
-- Simplify redundant service code into single module
 - Fix dapr error message storm during failure
 - Added Probes:
   - startup
   - readiness
   - liveness
+- Jaeger UI service for analyzing stack traces from otel

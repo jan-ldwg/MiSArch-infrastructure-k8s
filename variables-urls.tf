@@ -71,6 +71,7 @@ locals {
   rabbitmq_service_name = "rabbitmq"
   otel_collector_service_name = "otel-collector"
   misarch_ecs_service_name = "misarch-ecs"
+  jaeger_service_name         = "jaeger-collector"
 
   misarch_experiment_config_service_name     = "misarch-experiment-config"
   misarch_experiment_executor_service_name = "misarch-experiment-executor"
@@ -174,6 +175,11 @@ locals {
 // OTEL COLLECTOR URL FOR PROMETHEUS
 locals {
   otel_collector_prometheus_url = "otel-collector-opentelemetry-collector.${local.namespace}.svc.cluster.local:8889"
+}
+
+// JAEGER COLLECTOR URL
+locals {
+  jaeger_collector_url = "${local.jaeger_service_name}.${local.namespace}.svc.cluster.local:4317"
 }
 
 // GraphQL URLs

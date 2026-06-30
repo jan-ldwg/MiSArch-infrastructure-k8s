@@ -43,12 +43,19 @@ resource "helm_release" "otel-collector" {
       exporters:
         prometheus:
           endpoint: "0.0.0.0:8889"
+        otlp/jaeger:
+          endpoint: "${local.jaeger_collector_url}"
+          tls:
+            insecure: true
 
       service:
         pipelines:
           metrics:
             receivers: [otlp, prometheus]
             exporters: [prometheus]
+          traces:
+            receivers: [otlp]
+            exporters: [otlp/jaeger]
         telemetry:
           logs:
             level: "error"
@@ -73,6 +80,10 @@ resource "helm_release" "otel-collector" {
       exporters:
         debug:
           verbosity: detailed
+        otlp/jaeger:
+          endpoint: "${local.jaeger_collector_url}"
+          tls:
+            insecure: true
       service:
         pipelines:
           metrics:
@@ -80,7 +91,7 @@ resource "helm_release" "otel-collector" {
             exporters: [debug]
           traces:
             receivers: [otlp]
-            exporters: [debug]
+            exporters: [otlp/jaeger, debug]
           logs:
             receivers: [otlp]
             exporters: [debug]
