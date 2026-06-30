@@ -1,36 +1,136 @@
 {
   "experiments": [
     {
-      "testName": "Basic test",
-      "description": "Test with moderate load and no fault injections",
+      "testName": "Baseline - No Chaos",
+      "description": "Baseline run with no fault injections",
       "gatlingConfig": [
-        {
-          "loadScript": "gatling/abortedBuyProcessScenario.kt",
-          "userSteps": "gatling/userSteps60s.csv"
-        },
-        {
-          "loadScript": "gatling/buyProcessScenario.kt",
-          "userSteps": "gatling/userSteps60s.csv"
-        }
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
       ],
       "chaosConfig": "chaos/none.json",
-      "misarchConfig": "misarch/none.json"
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
     },
     {
-      "testName": "Longer basic test",
-      "description": "Test with moderate load and no fault injections",
+      "testName": "API Chain - Kill Order Service",
+      "description": "Kill misarch-order pod during load. Hypothesis: 100% order creation failure.",
       "gatlingConfig": [
-        {
-          "loadScript": "gatling/abortedBuyProcessScenario.kt",
-          "userSteps": "gatling/userSteps180s.csv"
-        },
-        {
-          "loadScript": "gatling/buyProcessScenario.kt",
-          "userSteps": "gatling/userSteps60s.csv"
-        }
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
       ],
-      "chaosConfig": "chaos/none.json",
-      "misarchConfig": "misarch/none.json"
+      "chaosConfig": "chaos/order-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "API Chain - Kill Gateway",
+      "description": "Kill misarch-gateway pod during load. Hypothesis: 100% total system failure.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/gateway-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "API Chain - Kill ShoppingCart",
+      "description": "Kill misarch-shoppingcart pod during load. Hypothesis: 100% cart/order creation failure.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/shoppingcart-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "API Chain - Kill Keycloak",
+      "description": "Kill keycloak pod during load. Hypothesis: 100% auth failure, total system down.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/keycloak-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "API Chain - Kill Catalog",
+      "description": "Kill misarch-catalog pod during load. Hypothesis: browsing fails, existing cart orders still complete.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/catalog-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "Event Chain - Kill Invoice",
+      "description": "Kill misarch-invoice pod during load. Hypothesis: orders complete but invoice count mismatches order count.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/invoice-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "Event Chain - Kill Tax",
+      "description": "Kill misarch-tax pod during load. Hypothesis: orders pending/unfulfilled, state mismatch.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/tax-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "Event Chain - Kill Discount",
+      "description": "Kill misarch-discount pod during load. Hypothesis: pricing inconsistency in orders.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/discount-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "Peripheral - Kill Review",
+      "description": "Kill misarch-review pod. Hypothesis: no impact on order completion.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/review-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "Peripheral - Kill Wishlist",
+      "description": "Kill misarch-wishlist pod. Hypothesis: no impact on order completion.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/wishlist-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
+    },
+    {
+      "testName": "Peripheral - Kill Media",
+      "description": "Kill misarch-media pod. Hypothesis: images break, purchases still complete.",
+      "gatlingConfig": [
+        { "loadScript": "gatling/abortedBuyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" },
+        { "loadScript": "gatling/buyProcessScenario.kt", "userSteps": "gatling/userSteps60s.csv" }
+      ],
+      "chaosConfig": "chaos/media-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/standard.json"
     }
   ]
 }

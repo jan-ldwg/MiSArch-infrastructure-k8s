@@ -1,0 +1,36 @@
+{
+  "title": "Kill order pod",
+  "description": "Terminates all pods of misarch-order to test resilience",
+  "steady-state-hypothesis": {
+    "title": "order deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "order pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-order", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill order pods during load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-order",
+          "ns": "misarch"
+        }
+      },
+      "pauses": { "before": 80, "after": 45 }
+    }
+  ]
+}

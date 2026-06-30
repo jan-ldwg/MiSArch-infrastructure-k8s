@@ -1,0 +1,36 @@
+{
+  "title": "Kill media pod",
+  "description": "Terminates all pods of misarch-media to verify no order impact",
+  "steady-state-hypothesis": {
+    "title": "media deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "media pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-media", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill media pods during load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-media",
+          "ns": "misarch"
+        }
+      },
+      "pauses": { "before": 80, "after": 45 }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "title": "Kill wishlist pod",
+  "description": "Terminates all pods of misarch-wishlist to verify no order impact",
+  "steady-state-hypothesis": {
+    "title": "wishlist deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "wishlist pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-wishlist", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill wishlist pods during load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-wishlist",
+          "ns": "misarch"
+        }
+      },
+      "pauses": { "before": 80, "after": 45 }
+    }
+  ]
+}

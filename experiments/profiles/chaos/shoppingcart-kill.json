@@ -1,0 +1,36 @@
+{
+  "title": "Kill shoppingcart pod",
+  "description": "Terminates all pods of misarch-shoppingcart to test resilience",
+  "steady-state-hypothesis": {
+    "title": "shoppingcart deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "shoppingcart pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-shoppingcart", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill shoppingcart pods during load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-shoppingcart",
+          "ns": "misarch"
+        }
+      },
+      "pauses": { "before": 80, "after": 45 }
+    }
+  ]
+}

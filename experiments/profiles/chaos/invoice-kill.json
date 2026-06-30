@@ -1,0 +1,36 @@
+{
+  "title": "Kill invoice pod",
+  "description": "Terminates all pods of misarch-invoice to test data consistency",
+  "steady-state-hypothesis": {
+    "title": "invoice deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "invoice pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-invoice", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill invoice pods during load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-invoice",
+          "ns": "misarch"
+        }
+      },
+      "pauses": { "before": 80, "after": 45 }
+    }
+  ]
+}
