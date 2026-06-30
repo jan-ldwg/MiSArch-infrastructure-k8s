@@ -144,6 +144,11 @@ variable "OTEL_COLLECTOR_VERSION" {
   default = "0.128.0"
 }
 
+variable "JAEGER_VERSION" {
+  type    = string
+  default = "1.66.0"
+}
+
 variable "MISARCH_EXPERIMENT_CONFIG_VERSION" {
   type    = string
   default = "main@sha256:253fa0c54b9452e49a6a9ab53c1d57e62eb6aff2415ca06334aa584c28f3c6a4"
