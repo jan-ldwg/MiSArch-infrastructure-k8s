@@ -22,7 +22,10 @@
   - updated gatling script to create new user for every simulated user journey
   - integrated csv export from Maxim
   - querying of inventoryCount from graphql before and after the experiment to check for data consistency with placed orders from gatling
+  - warm up configuration
 - set up overleaf project
+- extended visualization script to include all endpoints
+- debugged jaeger deployment
 
 ## Maryam
 

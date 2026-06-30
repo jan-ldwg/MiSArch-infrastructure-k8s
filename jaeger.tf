@@ -27,6 +27,10 @@ resource "kubernetes_deployment" "jaeger" {
             name           = "grpc"
           }
           port {
+            container_port = 4317
+            name           = "otlp-grpc"
+          }
+          port {
             container_port = 14269
             name           = "health"
           }
@@ -81,6 +85,11 @@ resource "kubernetes_service" "jaeger" {
       name        = "grpc"
       port        = 14250
       target_port = 14250
+    }
+    port {
+      name        = "otlp-grpc"
+      port        = 4317
+      target_port = 4317
     }
     port {
       name        = "ui"
