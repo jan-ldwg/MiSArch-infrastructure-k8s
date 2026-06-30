@@ -8,7 +8,7 @@
       ],
       "chaosConfig": "chaos/none.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "API Chain - Kill Order Service",
@@ -18,7 +18,7 @@
       ],
       "chaosConfig": "chaos/order-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "API Chain - Kill Gateway",
@@ -28,7 +28,7 @@
       ],
       "chaosConfig": "chaos/gateway-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "API Chain - Kill ShoppingCart",
@@ -38,7 +38,7 @@
       ],
       "chaosConfig": "chaos/shoppingcart-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "API Chain - Kill Keycloak",
@@ -48,7 +48,7 @@
       ],
       "chaosConfig": "chaos/keycloak-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "API Chain - Kill Catalog",
@@ -58,7 +58,7 @@
       ],
       "chaosConfig": "chaos/catalog-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "Event Chain - Kill Invoice",
@@ -68,7 +68,7 @@
       ],
       "chaosConfig": "chaos/invoice-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "Event Chain - Kill Tax",
@@ -78,7 +78,7 @@
       ],
       "chaosConfig": "chaos/tax-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "Event Chain - Kill Discount",
@@ -88,7 +88,7 @@
       ],
       "chaosConfig": "chaos/discount-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "Peripheral - Kill Review",
@@ -98,7 +98,7 @@
       ],
       "chaosConfig": "chaos/review-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "Peripheral - Kill Wishlist",
@@ -108,7 +108,7 @@
       ],
       "chaosConfig": "chaos/wishlist-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     },
     {
       "testName": "Peripheral - Kill Media",
@@ -118,7 +118,7 @@
       ],
       "chaosConfig": "chaos/media-kill.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/standard.json"
+      "globalConfig": "global/warmup50-60s.json"
     }
   ]
 }
