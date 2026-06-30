@@ -132,6 +132,14 @@ terraform output grafana_admin_password
 To access an experiment dashboard, go to the forwarded URL (
 `localhost:3000/d/<EXPERIMENT_ID>`)
 
+## Jaeger
+
+```sh
+kubectl port-forward svc/jaeger-collector -n misarch 16686:16686
+```
+
+Then open http://localhost:16686
+
 ## InfluxDB
 
 ```sh
