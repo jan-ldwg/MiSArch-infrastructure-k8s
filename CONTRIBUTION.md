@@ -27,3 +27,15 @@
 ## Maryam
 
 - python script to visualize test results
+
+## Maxim Strzebkowski
+
+- Static code analysis
+- Static project architecture analysis
+- Local deployability of services for testing
+- Simplify redundant service code into single module
+- Fix dapr error message storm during failure
+- Added Probes:
+  - startup
+  - readiness
+  - liveness
