@@ -47,16 +47,25 @@ COLORS   = ["#2196F3", "#F44336", "#4CAF50", "#FF9800", "#9C27B0"]
 LSTYLES  = ["-", "--", "-.", ":", "-"]
 
 ENDPOINT_NAMES = {
-    "address":           "Address",
-    "createordermuta":   "Create Order",
-    "createshoppingc":   "Create Cart",
-    "get":               "Get (misc)",
-    "paymentinformat":   "Payment Info",
-    "placeordermutat":   "Place Order",
-    "product":           "Product",
+    "getadmintoken":     "Get Admin Token",
+    "createnewuser":     "Create User",
+    "getuserid":         "Get User Id",
+    "setpassword":       "Set Password",
+    "getbuyerrole":      "Get Buyer Role",
+    "getemployeerole":   "Get Employee Role",
+    "assignroles":       "Assign Roles",
+    "getaccesstoken":    "Get Access Token",
+    "frontpage":         "Frontpage",
     "products":          "Products",
-    "shipmentmethods":   "Shipment Methods",
+    "product":           "Product",
     "users":             "Users",
+    "addaddress":        "Add Address",
+    "address":           "Get Address",
+    "createshoppingc":   "Create Cart",
+    "shipmentmethods":   "Shipment Methods",
+    "paymentinformat":   "Payment Info",
+    "createordermuta":   "Create Order",
+    "placeordermutat":   "Place Order",
 }
 
 
