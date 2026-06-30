@@ -19,6 +19,9 @@
 - initial draft of baseline presentation
 - python script to automate experiment execution
   - initial gatling and chaos configs copied from William`s proof of concept
+  - updated gatling script to create new user for every simulated user journey
+  - integrated csv export from Maxim
+  - querying of inventoryCount from graphql before and after the experiment to check for data consistency with placed orders from gatling
 - set up overleaf project
 
 
@@ -33,3 +36,6 @@
   - startup
   - readiness
   - liveness
+## Maryam
+
+- python script to visualize test results
