@@ -5,7 +5,12 @@
 //
 // Uses WaitForFirstConsumer so the disk is created in the same zone the pod is
 // scheduled to (important on regional clusters).
+//
+// Conditionally created: set `create_gcp_storage_class = true` for GKE deployments,
+// otherwise the default StorageClass from `var.storage_class_name` is used (for
+// minikube/kind/Docker Desktop local development).
 resource "kubernetes_storage_class" "hdd" {
+  count = var.create_gcp_storage_class ? 1 : 0
   metadata {
     name = "hdd"
   }
@@ -21,5 +26,5 @@ resource "kubernetes_storage_class" "hdd" {
 }
 
 locals {
-  storage_class_name = kubernetes_storage_class.hdd.metadata[0].name
+  storage_class_name = var.storage_class_name
 }

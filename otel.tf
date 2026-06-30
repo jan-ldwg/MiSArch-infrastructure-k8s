@@ -5,7 +5,7 @@ resource "helm_release" "otel-collector" {
   namespace  = local.namespace
 
   values = [
-    <<-EOF
+    var.otel_collector_mode == "gcp" ? <<-EOF
     mode: "deployment"
     image:
       repository: "otel/opentelemetry-collector"
@@ -53,10 +53,47 @@ resource "helm_release" "otel-collector" {
           logs:
             level: "error"
     EOF
+    : <<-EOF
+    mode: "deployment"
+    image:
+      repository: "otel/opentelemetry-collector"
+      tag: ${var.OTEL_COLLECTOR_VERSION}
+    service:
+      enabled: true
+      type: ClusterIP
+    ports:
+      metrics:
+        enabled: false
+    config:
+      receivers:
+        otlp:
+          protocols:
+            http:
+              endpoint: "0.0.0.0:4318"
+      exporters:
+        debug:
+          verbosity: detailed
+      service:
+        pipelines:
+          metrics:
+            receivers: [otlp]
+            exporters: [debug]
+          traces:
+            receivers: [otlp]
+            exporters: [debug]
+          logs:
+            receivers: [otlp]
+            exporters: [debug]
+        telemetry:
+          logs:
+            level: "debug"
+    EOF
   ]
 }
 
+# Cluster-level RBAC for Prometheus service discovery — only needed in GCP mode
 resource "kubernetes_cluster_role" "otel_collector_prom_sd" {
+  count = var.otel_collector_mode == "gcp" ? 1 : 0
   metadata {
     name = "otel-collector-prometheus-sd"
   }
@@ -69,6 +106,7 @@ resource "kubernetes_cluster_role" "otel_collector_prom_sd" {
 }
 
 resource "kubernetes_cluster_role_binding" "otel_collector_prom_sd" {
+  count = var.otel_collector_mode == "gcp" ? 1 : 0
   metadata {
     name = "otel-collector-prometheus-sd"
   }
@@ -76,7 +114,7 @@ resource "kubernetes_cluster_role_binding" "otel_collector_prom_sd" {
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = kubernetes_cluster_role.otel_collector_prom_sd.metadata[0].name
+    name      = kubernetes_cluster_role.otel_collector_prom_sd[0].metadata[0].name
   }
 
   subject {
