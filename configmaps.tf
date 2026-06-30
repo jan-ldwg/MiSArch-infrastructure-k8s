@@ -19,7 +19,7 @@ locals {
   misarch_shipment_env_vars_configmap                     = "misarch-shipment-env-vars"
   misarch_shoppingcart_env_vars_configmap                 = "misarch-shoppingcart-env-vars"
   misarch_simulation_env_vars_configmap                   = "misarch-simulation-env-vars"
-  misarch_tax_env_vars_configmap = "misarch-tax-env-vars"
+  misarch_tax_env_vars_configmap                          = "misarch-tax-env-vars"
   misarch_user_env_vars_configmap                         = "misarch-user-env-vars"
   misarch_wishlist_env_vars_configmap                     = "misarch-wishlist-env-vars"
   rabbitmq_env_vars_configmap                             = "rabbitmq-env-vars"
@@ -56,6 +56,17 @@ resource "kubernetes_config_map" "base_misarch_env_vars" {
     name      = local.misarch_base_env_vars_configmap
     namespace = local.namespace
   }
+  data = merge(
+    {
+      "OTEL_LOG_LEVEL"        = var.otel_log_level
+      "OTEL_METRICS_EXPORTER" = var.otel_disabled ? "none" : "otlp"
+      "OTEL_TRACES_EXPORTER"  = var.otel_disabled ? "none" : "otlp"
+      "OTEL_LOGS_EXPORTER"    = var.otel_disabled ? "none" : "otlp"
+    },
+    var.otel_disabled ? {} : {
+      "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    }
+  )
 }
 
 resource "kubernetes_config_map" "keycloak_env_vars" {
@@ -65,13 +76,13 @@ resource "kubernetes_config_map" "keycloak_env_vars" {
   }
 
   data = {
-    "KC_HOSTNAME_STRICT"     = "false"
-    "KEYCLOAK_EXTRA_ARGS"    = "--import-realm"
+    "KC_HOSTNAME_STRICT"              = "false"
+    "KEYCLOAK_EXTRA_ARGS"             = "--import-realm"
     "QUARKUS_HTTP_ACCESS_LOG_ENABLED" = "true" // for easier debugging, can just as well be deleted
-    "KEYCLOAK_HTTPS_ENABLED" = "false"
-    "KC_HTTP_PORT"           = "8080"
-    "KC_DB_URL"              = "jdbc:postgresql://${local.keycloak_db_url}/keycloak"
-    "KC_DB_PASSWORD"         = random_password.keycloak_db_password.result
+    "KEYCLOAK_HTTPS_ENABLED"          = "false"
+    "KC_HTTP_PORT"                    = "8080"
+    "KC_DB_URL"                       = "jdbc:postgresql://${local.keycloak_db_url}/keycloak"
+    "KC_DB_PASSWORD"                  = random_password.keycloak_db_password.result
   }
 }
 
@@ -108,7 +119,6 @@ resource "kubernetes_config_map" "misarch_address_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.address_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_address_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -136,7 +146,6 @@ resource "kubernetes_config_map" "misarch_catalog_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.catalog_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_catalog_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -165,7 +174,6 @@ resource "kubernetes_config_map" "misarch_discount_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.discount_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_discount_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -225,8 +233,7 @@ resource "kubernetes_config_map" "misarch_gateway_env_vars" {
   }
 
   data = {
-    "NODE_ENV"                    = "production"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "NODE_ENV"                      = "production"
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
@@ -253,8 +260,7 @@ resource "kubernetes_config_map" "misarch_inventory_env_vars" {
   }
 
   data = {
-    "DATABASE_URI" = "mongodb://root:${random_password.mongodb_root_password_inventory.result}@${local.inventory_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "DATABASE_URI"                  = "mongodb://root:${random_password.mongodb_root_password_inventory.result}@${local.inventory_db_url}"
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
@@ -281,9 +287,8 @@ resource "kubernetes_config_map" "misarch_invoice_env_vars" {
   }
 
   data = {
-    "ME_CONFIG_MONGODB_URL"       = "mongodb://${local.invoice_db_url}"
-    "MONGODB_URI"                 = "mongodb://${local.invoice_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "ME_CONFIG_MONGODB_URL" = "mongodb://${local.invoice_db_url}"
+    "MONGODB_URI"           = "mongodb://${local.invoice_db_url}"
   }
 }
 
@@ -306,9 +311,8 @@ resource "kubernetes_config_map" "misarch_media_env_vars" {
   }
 
   data = {
-    MINIO_ENDPOINT                = "http://${local.minio_url}"
-    MONGODB_URI                   = "mongodb://${local.media_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    MINIO_ENDPOINT = "http://${local.minio_url}"
+    MONGODB_URI    = "mongodb://${local.media_db_url}"
   }
 }
 
@@ -335,7 +339,6 @@ resource "kubernetes_config_map" "misarch_notification_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.notification_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_notification_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -359,9 +362,8 @@ resource "kubernetes_config_map" "misarch_order_env_vars" {
   }
 
   data = {
-    "ME_CONFIG_MONGODB_URL"       = "mongodb://${local.order_db_url}"
-    "MONGODB_URI"                 = "mongodb://${local.order_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "ME_CONFIG_MONGODB_URL" = "mongodb://${local.order_db_url}"
+    "MONGODB_URI"           = "mongodb://${local.order_db_url}"
   }
 }
 
@@ -388,7 +390,6 @@ resource "kubernetes_config_map" "misarch_payment_env_vars" {
     "DATABASE_NAME"                 = var.MISARCH_DB_DATABASE
     "PAYMENT_PROVIDER_URL"          = "http://${local.simulation_url}/payment/register"
     "SIMULATION_URL"                = "http://${local.simulation_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT"   = "http://${local.otel_collector_url_http}"
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
@@ -415,9 +416,8 @@ resource "kubernetes_config_map" "misarch_review_env_vars" {
   }
 
   data = {
-    "ME_CONFIG_MONGODB_URL"       = "mongodb://${local.review_db_url}"
-    "MONGODB_URI"                 = "mongodb://${local.review_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "ME_CONFIG_MONGODB_URL" = "mongodb://${local.review_db_url}"
+    "MONGODB_URI"           = "mongodb://${local.review_db_url}"
   }
 }
 
@@ -444,7 +444,6 @@ resource "kubernetes_config_map" "misarch_return_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.return_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_return_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -473,7 +472,6 @@ resource "kubernetes_config_map" "misarch_shipment_env_vars" {
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_shipment_db_password.result
     "MISARCH_SHIPMENT_PROVIDER_ENDPOINT"                           = "http://${local.simulation_url}/shipment/register"
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -497,9 +495,8 @@ resource "kubernetes_config_map" "misarch_shoppingcart_env_vars" {
   }
 
   data = {
-    "ME_CONFIG_MONGODB_URL"       = "mongodb://${local.shoppingcart_db_url}"
-    "MONGODB_URI"                 = "mongodb://${local.shoppingcart_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "ME_CONFIG_MONGODB_URL" = "mongodb://${local.shoppingcart_db_url}"
+    "MONGODB_URI"           = "mongodb://${local.shoppingcart_db_url}"
   }
 }
 
@@ -522,15 +519,14 @@ resource "kubernetes_config_map" "misarch_simulation_env_vars" {
   }
 
   data = {
-    RABBITMQ_URL                = "amqp://${local.rabbitmq_url}"
-    PAYMENTS_PER_MINUTE         = var.MISARCH_SIMULATION_PAYMENTS_PER_MINUTE
-    SHIPMENTS_PER_MINUTE        = var.MISARCH_SIMULATION_SHIPMENTS_PER_MINUTE
-    PROCESSING_TIME_SECONDS     = var.MISARCH_SIMULATION_PROCESSING_TIME_SECONDS
-    PAYMENT_URL                 = "http://${local.payment_url}"
-    SHIPMENT_URL                = "http://${local.shipment_url}"
-    OTEL_EXPORTER_OTLP_ENDPOINT = "http://${local.otel_collector_url_http}"
+    RABBITMQ_URL                  = "amqp://${local.rabbitmq_url}"
+    PAYMENTS_PER_MINUTE           = var.MISARCH_SIMULATION_PAYMENTS_PER_MINUTE
+    SHIPMENTS_PER_MINUTE          = var.MISARCH_SIMULATION_SHIPMENTS_PER_MINUTE
+    PROCESSING_TIME_SECONDS       = var.MISARCH_SIMULATION_PROCESSING_TIME_SECONDS
+    PAYMENT_URL                   = "http://${local.payment_url}"
+    SHIPMENT_URL                  = "http://${local.shipment_url}"
     OTEL_NODE_RESOURCE_DETECTORS  = "env,host,os"
-    OTEL_SERVICE_NAME          = "payment"
+    OTEL_SERVICE_NAME             = "payment"
     OTEL_SEMCONV_STABILITY_OPT_IN = "http"
     NODE_OPTIONS                  = "--require @opentelemetry/auto-instrumentations-node/register"
   }
@@ -559,7 +555,6 @@ resource "kubernetes_config_map" "misarch_tax_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.tax_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_tax_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -587,7 +582,6 @@ resource "kubernetes_config_map" "misarch_user_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.user_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_user_db_password.result
-    "OTEL_EXPORTER_OTLP_ENDPOINT"                                  = "http://${local.otel_collector_url_http}"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -611,9 +605,8 @@ resource "kubernetes_config_map" "misarch_wishlist_env_vars" {
   }
 
   data = {
-    "ME_CONFIG_MONGODB_URL"       = "mongodb://${local.wishlist_db_url}"
-    "MONGODB_URI"                 = "mongodb://${local.wishlist_db_url}"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://${local.otel_collector_url_http}"
+    "ME_CONFIG_MONGODB_URL" = "mongodb://${local.wishlist_db_url}"
+    "MONGODB_URI"           = "mongodb://${local.wishlist_db_url}"
   }
 }
 

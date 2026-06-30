@@ -3,7 +3,7 @@ locals {
     "dapr.io/enabled"               = "true"
     "dapr.io/http-port"             = "3500"
     "dapr.io/config"                = "${local.dapr_general_config_name}"
-    "dapr.io/log-level"             = "debug"
+    "dapr.io/log-level"             = var.dapr_log_level
     "dapr.io/http-read-buffer-size" = "20" # KB, apparently the default of 4KB is too small in our usecase
 
     "dapr.io/sidecar-liveness-probe-threshold"      = "10"
@@ -24,11 +24,11 @@ locals {
     "dapr.io/app-port" = local.experiment_config_sidecar_port
   }
   minio_specific_annotations = {
-    "dapr.io/app-id"  = "minio"
+    "dapr.io/app-id"   = "minio"
     "dapr.io/app-port" = local.minio_port
-    "prometheus.io/scrape": "true"
-    "prometheus.io/path": "/minio/v2/metrics/cluster"
-    "prometheus.io/port": local.minio_port
+    "prometheus.io/scrape" : "true"
+    "prometheus.io/path" : "/minio/v2/metrics/cluster"
+    "prometheus.io/port" : local.minio_port
   }
   misarch_address_specific_annotations = {
     "dapr.io/app-id"   = "address"
