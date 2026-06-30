@@ -101,6 +101,11 @@ def copy_experiment_files(experiment_json_path: str, experiment_config: dict, ex
 		if file_ref:
 			copy_file_to_destination(make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles",file_ref)), experiment_path, EXPERIMENTS_DIR)
 
+	# globalConfig may be a path to a JSON file (not necessarily under profiles)
+	file_ref = experiment_config.get("globalConfig")
+	if file_ref:
+		copy_file_to_destination(make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles",file_ref)), experiment_path, EXPERIMENTS_DIR)
+
 	for variant in experiment_config.get("gatlingConfig", []):
 		for script_key in ("loadScript", "userSteps"):
 			file_ref = variant.get(script_key)
@@ -305,6 +310,40 @@ def set_json_config(config: str, e_id: str, e_version: str, url: str):
 				return raw.decode(errors='replace')
 	except Exception as e:
 		raise RuntimeError((f"Failed to update config at {url}: {e}"))
+
+
+def set_global_config(config: str, e_id: str, e_version: str, url: str):
+	'''Read a global JSON config, replace any `testUUID` fields with the given e_id, and upload it.'''
+	conf_path = make_path_absolute(EXPERIMENTS_DIR, config)
+
+	if not os.path.exists(conf_path):
+		raise FileNotFoundError(f"Config not found: {conf_path}")
+
+	conf_obj = read_validate_json(conf_path)
+
+	def _replace_test_uuid(obj):
+		if isinstance(obj, dict):
+			for k, v in obj.items():
+				if k == 'testUUID':
+					obj[k] = e_id
+				if k == 'testVersion':
+					obj[k] = e_version
+		
+
+	_replace_test_uuid(conf_obj)
+
+	body = json.dumps(conf_obj).encode('utf-8')
+	headers = {"Content-Type": "application/json"}
+	req = urllib.request.Request(url, data=body, headers=headers, method="PUT")
+	try:
+		with urllib.request.urlopen(req, timeout=10) as resp:
+			raw = resp.read()
+			try:
+				return json.loads(raw)
+			except Exception:
+				return raw.decode(errors='replace')
+	except Exception as e:
+		raise RuntimeError((f"Failed to update global config at {url}: {e}"))
 		
 
 def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
@@ -374,13 +413,20 @@ def wait_for_event(e_id: str, e_version: str):
 def run_experiment(config):
 	e_id, e_version = generate_experiment()
 	print(f"Created experiment {e_id}:{e_version}")
-	set_json_config(
-		os.path.join('profiles',config['chaosConfig']),
+	set_global_config(
+		os.path.join('profiles', config['globalConfig']),
 		e_id,
 		e_version,
-		f"{URL}/experiment/{e_id}/{e_version}/chaosToolkitConfig")
+		f"{URL}/experiment/{e_id}/{e_version}/config"
+	)
 	set_json_config(
-		os.path.join('profiles',config['misarchConfig']),
+		os.path.join('profiles', config['chaosConfig']),
+		e_id,
+		e_version,
+		f"{URL}/experiment/{e_id}/{e_version}/chaosToolkitConfig"
+	)
+	set_json_config(
+		os.path.join('profiles', config['misarchConfig']),
 		e_id,
 		e_version,
 		f"{URL}/experiment/{e_id}/{e_version}/misarchExperimentConfig"
@@ -389,7 +435,8 @@ def run_experiment(config):
 		config['gatlingConfig'],
 		e_id,
 		e_version,
-		f"{URL}/experiment/{e_id}/{e_version}/gatlingConfig" )
+		f"{URL}/experiment/{e_id}/{e_version}/gatlingConfig"
+	)
 	
 	start_experiment(e_id, e_version)
 	wait_for_event(e_id, e_version)

@@ -1,0 +1,8 @@
+{
+  "testUUID": "",
+  "testVersion": "",
+  "testName": "My Experiment",
+  "loadType": "NormalLoadTest",
+  "goals": [],
+  "warmUp": null
+}
