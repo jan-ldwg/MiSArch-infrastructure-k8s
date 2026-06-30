@@ -1,0 +1,16 @@
+{
+  "experiments": [
+    {
+      "testName": "Dapr Circuit Breaker Experiment on Payment",
+      "description": "Test with normal load and payment service request error injection",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic75-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/payment-500-always.json"
+    }
+  ]
+}
