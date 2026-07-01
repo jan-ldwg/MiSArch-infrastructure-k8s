@@ -71,7 +71,7 @@ variable "MISARCH_INVENTORY_VERSION" {
 
 variable "MISARCH_INVOICE_VERSION" {
   type    = string
-  default = "main@sha256:d6b3b006f4cae18cafdb2b1949fb22067b4ce24df8944b96734f9c91f42a3c45"
+  default = "ghcr.io/frankakn7/misarch-invoice:main"
 }
 
 variable "MISARCH_MEDIA_VERSION" {
