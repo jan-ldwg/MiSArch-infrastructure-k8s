@@ -36,59 +36,62 @@ import numpy as np
 from pathlib import Path
 
 # ── Style ─────────────────────────────────────────────────────────────────────
-BG       = "#ffffff"
-PANEL    = "#ffffff"
-TEXT     = "#000000"
-GRID     = "#b0b0b0"
-COLOR_OK  = "#1f77b4"
-COLOR_KO  = "#d62728"
+BG = "#ffffff"
+PANEL = "#ffffff"
+TEXT = "#000000"
+GRID = "#b0b0b0"
+COLOR_OK = "#1f77b4"
+COLOR_KO = "#d62728"
 COLOR_ALL = "#7f7f7f"
-COLORS   = ["#1f77b4", "#ff7f0e", "#2ca02c", "#9467bd", "#8c564b"]
-LSTYLES  = ["-", "--", "-.", ":", "-"]
+COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#9467bd", "#8c564b"]
+LSTYLES = ["-", "--", "-.", ":", "-"]
 
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "Times", "Palatino", "serif"],
-    "font.size": 10,
-    "axes.titlesize": 11,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
-    "legend.fontsize": 8,
-    "figure.facecolor": BG,
-    "axes.facecolor": PANEL,
-    "savefig.facecolor": BG,
-    "grid.color": GRID,
-    "grid.linestyle": "--",
-    "grid.linewidth": 0.5,
-    "axes.edgecolor": "#000000",
-    "axes.linewidth": 0.8,
-})
+plt.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["Times New Roman", "Times", "Palatino", "serif"],
+        "font.size": 10,
+        "axes.titlesize": 11,
+        "axes.labelsize": 10,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "legend.fontsize": 8,
+        "figure.facecolor": BG,
+        "axes.facecolor": PANEL,
+        "savefig.facecolor": BG,
+        "grid.color": GRID,
+        "grid.linestyle": "--",
+        "grid.linewidth": 0.5,
+        "axes.edgecolor": "#000000",
+        "axes.linewidth": 0.8,
+    }
+)
 
 ENDPOINT_NAMES = {
-    "getadmintoken":     "Get Admin Token",
-    "createnewuser":     "Create User",
-    "getuserid":         "Get User Id",
-    "setpassword":       "Set Password",
-    "getbuyerrole":      "Get Buyer Role",
-    "getemployeerole":   "Get Employee Role",
-    "assignroles":       "Assign Roles",
-    "getaccesstoken":    "Get Access Token",
-    "frontpage":         "Frontpage",
-    "products":          "Products",
-    "product":           "Product",
-    "users":             "Users",
-    "addaddress":        "Add Address",
-    "address":           "Get Address",
-    "createshoppingc":   "Create Cart",
-    "shipmentmethods":   "Shipment Methods",
-    "paymentinformat":   "Payment Info",
-    "createordermuta":   "Create Order",
-    "placeordermutat":   "Place Order",
+    "getadmintoken": "Get Admin Token",
+    "createnewuser": "Create User",
+    "getuserid": "Get User Id",
+    "setpassword": "Set Password",
+    "getbuyerrole": "Get Buyer Role",
+    "getemployeerole": "Get Employee Role",
+    "assignroles": "Assign Roles",
+    "getaccesstoken": "Get Access Token",
+    "frontpage": "Frontpage",
+    "products": "Products",
+    "product": "Product",
+    "users": "Users",
+    "addaddress": "Add Address",
+    "address": "Get Address",
+    "createshoppingc": "Create Cart",
+    "shipmentmethods": "Shipment Methods",
+    "paymentinformat": "Payment Info",
+    "createordermuta": "Create Order",
+    "placeordermutat": "Place Order",
 }
 
 
 # ── CSV Parsing ───────────────────────────────────────────────────────────────
+
 
 def parse_influxdb_csv(filepath: str) -> dict:
     with open(filepath, "r", encoding="utf-8") as f:
@@ -139,6 +142,7 @@ def get_stat(data: dict, meas: str) -> float | None:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def style_ax(ax, title):
     ax.set_facecolor(PANEL)
     ax.set_title(title, color=TEXT, fontsize=11, fontweight="semibold", pad=8)
@@ -153,13 +157,14 @@ def style_ax(ax, title):
 
 
 def make_fig(nrows, ncols, title, figsize=None):
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize or (7*ncols, 4*nrows))
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize or (7 * ncols, 4 * nrows))
     fig.patch.set_facecolor(BG)
     fig.suptitle(title, color=TEXT, fontsize=13, fontweight="bold", y=1.01)
     return fig, axes
 
 
 # ── Dashboard 1: Time series ──────────────────────────────────────────────────
+
 
 def plot_timeseries(data_list, labels, output_path):
     fig, axes = make_fig(2, 2, "Gatling Time Series", figsize=(14, 9))
@@ -172,8 +177,14 @@ def plot_timeseries(data_list, labels, output_path):
         if "activeUsers" in data:
             df = data["activeUsers"]
             total = df.groupby("_time")["_value"].sum().reset_index()
-            ax.plot(total["_time"], total["_value"],
-                    color=COLORS[i], linestyle=LSTYLES[i], linewidth=2, label=label)
+            ax.plot(
+                total["_time"],
+                total["_value"],
+                color=COLORS[i],
+                linestyle=LSTYLES[i],
+                linewidth=2,
+                label=label,
+            )
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
     ax.set_ylabel("Active Users", color=TEXT, fontsize=8)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -191,23 +202,35 @@ def plot_timeseries(data_list, labels, output_path):
         for scenario, grp in df.groupby("scenario"):
             color = scenario_colors.get(scenario, COLORS[0])
             name = "Aborted Buy" if "aborted" in scenario.lower() else "Buy Process"
-            ax.plot(grp["_time"], grp["_value"],
-                    color=color, linewidth=1.5, label=name)
+            ax.plot(grp["_time"], grp["_value"], color=color, linewidth=1.5, label=name)
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
     ax.set_ylabel("Active Users", color=TEXT, fontsize=8)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=30, ha="right", color=TEXT)
 
-    # Panel 2: Responses ok/ko/all (first run)
+    # Panel 2: Responses ok/ko stacked (first run)
     ax = axes[2]
-    style_ax(ax, f"Responses (ok/ko/all) — {labels[0]}")
+    style_ax(ax, f"Responses (ok/ko) — {labels[0]}")
     if "responses" in data_list[0]:
         df = data_list[0]["responses"]
-        flavor_colors = {"all": COLOR_ALL, "ok": COLOR_OK, "ko": COLOR_KO}
-        for flavor, grp in df.groupby("flavor"):
-            ax.plot(grp["_time"], grp["_value"],
-                    color=flavor_colors.get(flavor, "grey"),
-                    linewidth=1.5, label=flavor.upper(), alpha=0.9)
+        pivoted = df.pivot_table(
+            index="_time", columns="flavor", values="_value", aggfunc="sum"
+        )
+        pivoted = pivoted.reindex(columns=["ok", "ko"]).fillna(0)
+        time = pivoted.index
+
+        ax.fill_between(
+            time, 0, pivoted["ok"], color=COLORS[0], alpha=0.6, label="OK", linewidth=0
+        )
+        ax.fill_between(
+            time,
+            pivoted["ok"],
+            pivoted["ok"] + pivoted["ko"],
+            color=COLOR_KO,
+            alpha=0.6,
+            label="KO",
+            linewidth=0,
+        )
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
     ax.set_ylabel("Responses / interval", color=TEXT, fontsize=8)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -221,9 +244,14 @@ def plot_timeseries(data_list, labels, output_path):
             df = data["responses"]
             ko = df[df["flavor"] == "ko"]
             if not ko.empty:
-                ax.plot(ko["_time"], ko["_value"],
-                        color=COLORS[i], linestyle=LSTYLES[i],
-                        linewidth=2, label=label)
+                ax.plot(
+                    ko["_time"],
+                    ko["_value"],
+                    color=COLORS[i],
+                    linestyle=LSTYLES[i],
+                    linewidth=2,
+                    label=label,
+                )
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
     ax.set_ylabel("Failed Responses / interval", color=TEXT, fontsize=8)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -237,6 +265,7 @@ def plot_timeseries(data_list, labels, output_path):
 
 # ── Dashboard 2: Response time summary (bar charts) ──────────────────────────
 
+
 def plot_response_times(data_list, labels, output_path):
     endpoints = list(ENDPOINT_NAMES.keys())
     endpoint_labels = [ENDPOINT_NAMES[e] for e in endpoints]
@@ -248,25 +277,30 @@ def plot_response_times(data_list, labels, output_path):
     axes = axes.flatten()
 
     metric_sets = [
-        ("Mean Response Time OK (ms)",  [f"meanResponseTimeOk_{e}"  for e in endpoints]),
-        ("Mean Response Time KO (ms)",  [f"meanResponseTimeKo_{e}"  for e in endpoints]),
-        ("P95 Response Time (ms)",      [f"percentiles3_{e}"        for e in endpoints]),
-        ("P99 Response Time (ms)",      [f"percentiles4_{e}"        for e in endpoints]),
+        ("Mean Response Time OK (ms)", [f"meanResponseTimeOk_{e}" for e in endpoints]),
+        ("Mean Response Time KO (ms)", [f"meanResponseTimeKo_{e}" for e in endpoints]),
+        ("P95 Response Time (ms)", [f"percentiles3_{e}" for e in endpoints]),
+        ("P99 Response Time (ms)", [f"percentiles4_{e}" for e in endpoints]),
     ]
 
     for ax, (title, meas_keys) in zip(axes, metric_sets):
         style_ax(ax, title)
         for i, (data, label) in enumerate(zip(data_list, labels)):
             vals = [get_stat(data, m) or 0 for m in meas_keys]
-            bars = ax.bar(x + i * width, vals, width,
-                          label=label, color=COLORS[i], alpha=0.85)
+            bars = ax.bar(
+                x + i * width, vals, width, label=label, color=COLORS[i], alpha=0.85
+            )
         ax.set_xticks(x + width * (n_runs - 1) / 2)
-        ax.set_xticklabels(endpoint_labels, rotation=35, ha="right",
-                           color=TEXT, fontsize=7)
+        ax.set_xticklabels(
+            endpoint_labels, rotation=35, ha="right", color=TEXT, fontsize=7
+        )
         ax.set_ylabel("ms", color=TEXT, fontsize=8)
         ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
         ax.yaxis.set_major_formatter(
-            mticker.FuncFormatter(lambda v, _: f"{v/1000:.1f}s" if v >= 1000 else f"{v:.0f}ms"))
+            mticker.FuncFormatter(
+                lambda v, _: f"{v/1000:.1f}s" if v >= 1000 else f"{v:.0f}ms"
+            )
+        )
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor=BG)
@@ -276,6 +310,7 @@ def plot_response_times(data_list, labels, output_path):
 
 # ── Dashboard 3: Request counts and error rates ───────────────────────────────
 
+
 def plot_request_counts(data_list, labels, output_path):
     endpoints = list(ENDPOINT_NAMES.keys())
     endpoint_labels = [ENDPOINT_NAMES[e] for e in endpoints]
@@ -283,28 +318,57 @@ def plot_request_counts(data_list, labels, output_path):
     x = np.arange(len(endpoints))
     width = 0.8 / n_runs
 
-    fig, axes = make_fig(2, 2, "Request Counts & Error Rates per Endpoint", figsize=(16, 10))
+    fig, axes = make_fig(
+        1, 2, "Request Counts & Error Rates per Endpoint", figsize=(18, 6)
+    )
     axes = axes.flatten()
 
-    metric_sets = [
-        ("Total Requests",    [f"numberOfRequestsTotal_{e}" for e in endpoints]),
-        ("OK Requests",       [f"numberOfRequestsOk_{e}"    for e in endpoints]),
-        ("KO (Failed) Requests", [f"numberOfRequestsKo_{e}" for e in endpoints]),
-        ("% Failed (group4)", [f"group4Percentage_{e}"      for e in endpoints]),
-    ]
+    # ── Panel 0: Stacked bar (OK on bottom, KO on top) ─────────────────────────
+    ax = axes[0]
+    style_ax(ax, "Requests (OK / Failed)")
 
-    for idx, (ax, (title, meas_keys)) in enumerate(zip(axes, metric_sets)):
-        style_ax(ax, title)
-        for i, (data, label) in enumerate(zip(data_list, labels)):
-            vals = [get_stat(data, m) or 0 for m in meas_keys]
-            color = COLOR_KO if "KO" in title or "Failed" in title else COLORS[i]
-            ax.bar(x + i * width, vals, width,
-                   label=label, color=COLORS[i], alpha=0.85)
-        ax.set_xticks(x + width * (n_runs - 1) / 2)
-        ax.set_xticklabels(endpoint_labels, rotation=35, ha="right",
-                           color=TEXT, fontsize=7)
-        ax.set_ylabel("%" if "%" in title else "count", color=TEXT, fontsize=8)
-        ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
+    ok_keys = [f"numberOfRequestsOk_{e}" for e in endpoints]
+    ko_keys = [f"numberOfRequestsKo_{e}" for e in endpoints]
+
+    for i, (data, label) in enumerate(zip(data_list, labels)):
+        ok_vals = [get_stat(data, m) or 0 for m in ok_keys]
+        ko_vals = [get_stat(data, m) or 0 for m in ko_keys]
+
+        ax.bar(
+            x + i * width,
+            ok_vals,
+            width,
+            color=COLORS[i],
+            alpha=0.85,
+            label=label,
+        )
+        ax.bar(
+            x + i * width,
+            ko_vals,
+            width,
+            bottom=ok_vals,
+            color=COLOR_KO,
+            alpha=0.55,
+            label="Failed" if i == 0 else None,
+        )
+
+    ax.set_xticks(x + width * (n_runs - 1) / 2)
+    ax.set_xticklabels(endpoint_labels, rotation=35, ha="right", color=TEXT, fontsize=7)
+    ax.set_ylabel("count", color=TEXT, fontsize=8)
+    ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
+
+    # ── Panel 1: % Failed ──────────────────────────────────────────────────────
+    ax = axes[1]
+    style_ax(ax, "% Failed (group4)")
+
+    fail_keys = [f"group4Percentage_{e}" for e in endpoints]
+    for i, (data, label) in enumerate(zip(data_list, labels)):
+        vals = [get_stat(data, m) or 0 for m in fail_keys]
+        ax.bar(x + i * width, vals, width, label=label, color=COLORS[i], alpha=0.85)
+    ax.set_xticks(x + width * (n_runs - 1) / 2)
+    ax.set_xticklabels(endpoint_labels, rotation=35, ha="right", color=TEXT, fontsize=7)
+    ax.set_ylabel("%", color=TEXT, fontsize=8)
+    ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor=BG)
@@ -314,20 +378,24 @@ def plot_request_counts(data_list, labels, output_path):
 
 # ── Dashboard 4: Percentile overview table ────────────────────────────────────
 
+
 def plot_percentile_table(data_list, labels, output_path):
     endpoints = [""] + list(ENDPOINT_NAMES.keys())  # "" = overall
     endpoint_labels = ["OVERALL"] + [ENDPOINT_NAMES[e] for e in endpoints[1:]]
 
     percentile_keys = {
-        "P50":  ("percentiles1",  "percentiles1_{}"),
-        "P75":  ("percentiles2",  "percentiles2_{}"),
-        "P95":  ("percentiles3",  "percentiles3_{}"),
-        "P99":  ("percentiles4",  "percentiles4_{}"),
+        "P50": ("percentiles1", "percentiles1_{}"),
+        "P75": ("percentiles2", "percentiles2_{}"),
+        "P95": ("percentiles3", "percentiles3_{}"),
+        "P99": ("percentiles4", "percentiles4_{}"),
     }
 
-    fig, axes = make_fig(len(data_list), 1,
-                         "Percentile Response Times per Endpoint (ms)",
-                         figsize=(16, 5 * len(data_list)))
+    fig, axes = make_fig(
+        len(data_list),
+        1,
+        "Percentile Response Times per Endpoint (ms)",
+        figsize=(16, 5 * len(data_list)),
+    )
     if len(data_list) == 1:
         axes = [axes]
 
@@ -337,17 +405,26 @@ def plot_percentile_table(data_list, labels, output_path):
         width = 0.2
         pct_colors = ["#4FC3F7", "#29B6F6", "#039BE5", "#0277BD"]
 
-        for i, (pct_label, (overall_key, per_key)) in enumerate(percentile_keys.items()):
+        for i, (pct_label, (overall_key, per_key)) in enumerate(
+            percentile_keys.items()
+        ):
             vals = []
             for ep in endpoints:
                 key = overall_key if ep == "" else per_key.format(ep)
                 vals.append((get_stat(data, key) or 0) / 1000)  # convert to seconds
-            ax.bar(x + i * width, vals, width, label=pct_label,
-                   color=pct_colors[i], alpha=0.85)
+            ax.bar(
+                x + i * width,
+                vals,
+                width,
+                label=pct_label,
+                color=pct_colors[i],
+                alpha=0.85,
+            )
 
         ax.set_xticks(x + width * 1.5)
-        ax.set_xticklabels(endpoint_labels, rotation=35, ha="right",
-                           color=TEXT, fontsize=7)
+        ax.set_xticklabels(
+            endpoint_labels, rotation=35, ha="right", color=TEXT, fontsize=7
+        )
         ax.set_ylabel("seconds", color=TEXT, fontsize=8)
         ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
 
@@ -358,6 +435,7 @@ def plot_percentile_table(data_list, labels, output_path):
 
 
 # ── Summary table ─────────────────────────────────────────────────────────────
+
 
 def print_summary(data_list, labels):
     print("\n" + "=" * 80)
@@ -374,19 +452,19 @@ def print_summary(data_list, labels):
         return f"{val/div:.1f}{unit}"
 
     rows = [
-        ("Total Requests",            "numberOfRequestsTotal",  1,    ""),
-        ("OK Requests",               "numberOfRequestsOk",     1,    ""),
-        ("KO Requests",               "numberOfRequestsKo",     1,    ""),
-        ("% Failed (group4)",         "group4Percentage",       1,    "%"),
-        ("Mean Response Time OK",     "meanResponseTimeOk",     1000, "s"),
-        ("Mean Response Time KO",     "meanResponseTimeKo",     1000, "s"),
-        ("P50 Response Time",         "percentiles1",           1000, "s"),
-        ("P75 Response Time",         "percentiles2",           1000, "s"),
-        ("P95 Response Time",         "percentiles3",           1000, "s"),
-        ("P99 Response Time",         "percentiles4",           1000, "s"),
-        ("Max Response Time",         "maxResponseTime",        1000, "s"),
-        ("Mean Req/sec OK",           "meanNumberOfRequestsPerSecondOk", 1, "/s"),
-        ("Mean Req/sec KO",           "meanNumberOfRequestsPerSecondKo", 1, "/s"),
+        ("Total Requests", "numberOfRequestsTotal", 1, ""),
+        ("OK Requests", "numberOfRequestsOk", 1, ""),
+        ("KO Requests", "numberOfRequestsKo", 1, ""),
+        ("% Failed (group4)", "group4Percentage", 1, "%"),
+        ("Mean Response Time OK", "meanResponseTimeOk", 1000, "s"),
+        ("Mean Response Time KO", "meanResponseTimeKo", 1000, "s"),
+        ("P50 Response Time", "percentiles1", 1000, "s"),
+        ("P75 Response Time", "percentiles2", 1000, "s"),
+        ("P95 Response Time", "percentiles3", 1000, "s"),
+        ("P99 Response Time", "percentiles4", 1000, "s"),
+        ("Max Response Time", "maxResponseTime", 1000, "s"),
+        ("Mean Req/sec OK", "meanNumberOfRequestsPerSecondOk", 1, "/s"),
+        ("Mean Req/sec KO", "meanNumberOfRequestsPerSecondKo", 1, "/s"),
     ]
 
     for label, meas, div, unit in rows:
@@ -401,15 +479,16 @@ def print_summary(data_list, labels):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Visualise MiSArch Gatling experiment results from InfluxDB CSV exports.")
+        description="Visualise MiSArch Gatling experiment results from InfluxDB CSV exports."
+    )
     parser.add_argument("--files", "-f", nargs="+", required=True)
     parser.add_argument("--labels", "-l", nargs="+")
     parser.add_argument("--output", "-o", default="timeseries.png")
     parser.add_argument("--output-dir", default=".")
-    parser.add_argument("--all", action="store_true",
-                        help="Generate all dashboards")
+    parser.add_argument("--all", action="store_true", help="Generate all dashboards")
     args = parser.parse_args()
 
     labels = args.labels if args.labels else [Path(f).stem for f in args.files]
