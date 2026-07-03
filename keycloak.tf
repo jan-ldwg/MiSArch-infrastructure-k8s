@@ -2,7 +2,7 @@ resource "kubernetes_service" "keycloak" {
   metadata {
     name      = local.keycloak_service_name
     namespace = local.namespace
-    labels = merge(local.base_misarch_labels, local.misarch_keycloak_specific_labels)
+    labels    = merge(local.base_misarch_labels, local.misarch_keycloak_specific_labels)
   }
 
   spec {
@@ -52,11 +52,11 @@ resource "kubernetes_deployment" "keycloak" {
 
           resources {
             limits = {
-              cpu    = "2000m"
+              cpu    = "5000m"
               memory = "2400Mi"
             }
             requests = {
-              cpu    = "300m"
+              cpu    = "2000m"
               memory = "500Mi"
             }
           }
