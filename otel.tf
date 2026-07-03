@@ -48,6 +48,15 @@ resource "helm_release" "otel-collector" {
           tls:
             insecure: true
 
+      processors:
+        filter/heartbeats:
+          spans:
+            exclude:
+              match_type: regexp
+              attributes:
+                - key: messaging.destination.name
+                  value: ".*heartbeat.*"
+
       service:
         pipelines:
           metrics:
@@ -55,6 +64,7 @@ resource "helm_release" "otel-collector" {
             exporters: [prometheus]
           traces:
             receivers: [otlp]
+            processors: [filter/heartbeats]
             exporters: [otlp/jaeger]
         telemetry:
           logs:
