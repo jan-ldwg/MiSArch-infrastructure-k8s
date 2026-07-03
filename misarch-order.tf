@@ -25,7 +25,7 @@ resource "kubernetes_deployment" "misarch_order" {
       spec {
 
         container {
-          image             = "ghcr.io/misarch/order:${var.MISARCH_ORDER_VERSION}"
+          image             = var.MISARCH_ORDER_VERSION
           image_pull_policy = "Always"
 
           name = local.misarch_order_service_name

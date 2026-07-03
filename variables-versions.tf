@@ -86,7 +86,7 @@ variable "MISARCH_NOTIFICATION_VERSION" {
 
 variable "MISARCH_ORDER_VERSION" {
   type    = string
-  default = "main@sha256:9029c69089a58f5fd0cf147bd3c44ec51082a47ed6af7a65ee482da79cad81ac"
+  default = "ghcr.io/jan-ldwg/order:latest"
 }
 
 variable "MISARCH_PAYMENT_VERSION" {
