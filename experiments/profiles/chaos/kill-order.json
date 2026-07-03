@@ -1,0 +1,39 @@
+{
+  "title": "Kill order",
+  "description": "Kills the order service after 2 minutes",
+  "steady-state-hypothesis": {
+    "title": "Order deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "Order pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "misarch-order", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill order pods under load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-order",
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
+        }
+      },
+      "pauses": { "before": 120 }
+    }
+  ]
+}

@@ -10,7 +10,8 @@
         }
       ],
       "chaosConfig": "chaos/none.json",
-      "misarchConfig": "misarch/none.json"
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup50-60s.json"
     }
   ]
 }

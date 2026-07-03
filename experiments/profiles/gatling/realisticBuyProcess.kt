@@ -23,6 +23,7 @@ val realisticBuyProcess = scenario("realisticBuyProcess")
         .formParam("client_id", "admin-cli")
         .check(jsonPath("$.access_token").saveAs("adminToken"))
      )
+     .exitHereIfFailed()
      .exec { session ->
         session
             .set("username", UUID.randomUUID().toString())
