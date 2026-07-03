@@ -16,13 +16,18 @@ resource "helm_release" "redis" {
   master:
     readinessProbe:
       enabled: false
+    resources:
+      limits:
+        memory: "400Mi"
+      requests:
+        memory: "256Mi"
     extraFlags:
       - "--appendonly no"
-      - "--save 900 1"
-      - "--save 300 10"
-      - "--save 60 10000"
+      - "--save \"\""
+      - "--maxmemory 350mb"
+      - "--maxmemory-policy allkeys-lru"
     persistence:
-      enabled: true
+      enabled: false
     terminationGracePeriodSeconds: 30
 
   replica:
