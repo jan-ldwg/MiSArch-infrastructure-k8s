@@ -7,6 +7,7 @@ deployment_target        = "local"
 
 ROOT_DOMAIN              = "http://localhost:8080"
 storage_class_name       = "standard"
+storage_class_name_ssd   = "standard"
 create_gcp_storage_class = false
 dapr_log_level           = "error"
 otel_log_level           = "error"

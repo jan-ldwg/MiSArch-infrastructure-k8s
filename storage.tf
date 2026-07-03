@@ -25,6 +25,23 @@ resource "kubernetes_storage_class" "hdd" {
   }
 }
 
+resource "kubernetes_storage_class" "ssd" {
+  count = var.create_gcp_storage_class ? 1 : 0
+  metadata {
+    name = "ssd"
+  }
+
+  storage_provisioner    = "pd.csi.storage.gke.io"
+  reclaim_policy         = "Delete"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  allow_volume_expansion = true
+
+  parameters = {
+    type = "pd-balanced"
+  }
+}
+
 locals {
-  storage_class_name = var.storage_class_name
+  storage_class_name     = var.storage_class_name
+  storage_class_name_ssd = var.storage_class_name_ssd
 }

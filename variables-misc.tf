@@ -104,6 +104,12 @@ variable "storage_class_name" {
   default     = "hdd"
 }
 
+variable "storage_class_name_ssd" {
+  type        = string
+  description = "Kubernetes StorageClass name for persistent volumes with high performance"
+  default     = "ssd"
+}
+
 variable "create_gcp_storage_class" {
   type        = bool
   description = "Create the GCP-specific 'hdd' StorageClass (pd-standard)"

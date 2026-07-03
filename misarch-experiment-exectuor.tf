@@ -11,8 +11,8 @@ resource "kubernetes_service" "misarch_experiment_executor" {
     }
 
     port {
-      name       = "http"
-      port       = 8888
+      name        = "http"
+      port        = 8888
       target_port = 8888
     }
   }
@@ -25,7 +25,7 @@ resource "kubernetes_persistent_volume_claim" "misarch_experiment_executor_pvc" 
   }
   spec {
     access_modes       = ["ReadWriteOnce"]
-    storage_class_name = local.storage_class_name
+    storage_class_name = local.storage_class_name_ssd
     resources {
       requests = {
         storage = "1Gi"
@@ -33,7 +33,7 @@ resource "kubernetes_persistent_volume_claim" "misarch_experiment_executor_pvc" 
     }
   }
 
-  wait_until_bound = false  # <- PVC wird erst Bound wenn Deployment läuft
+  wait_until_bound = false # <- PVC wird erst Bound wenn Deployment läuft
 }
 
 
@@ -60,7 +60,7 @@ resource "kubernetes_deployment" "misarch_experiment_executor" {
 
     template {
       metadata {
-        labels      = merge(local.base_misarch_labels, local.misarch_experiment_executor_specific_labels)
+        labels = merge(local.base_misarch_labels, local.misarch_experiment_executor_specific_labels)
       }
 
       spec {

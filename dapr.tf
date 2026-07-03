@@ -9,7 +9,7 @@ resource "helm_release" "redis" {
     local.bitnami_legacy_redis_image_overrides,
     <<-EOF
   global:
-    storageClass: "${local.storage_class_name}"
+    storageClass: "${local.storage_class_name_ssd}"
   auth:
     password: "${random_password.redis.result}"
   # Everything depends on redis being ready quickly, so decrease the preset timelimit and rather let it fail a few times to save some setup time
@@ -128,5 +128,5 @@ resource "kubectl_manifest" "dapr_config" {
 // Pseudo resource so that all services can simply depend on this resource instead of the whole list ↓
 resource "terraform_data" "dapr" {
   depends_on = [helm_release.dapr, kubectl_manifest.dapr_config, kubectl_manifest.dapr_pubsub_config_experiment_config,
-    kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config]
+  kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config]
 }

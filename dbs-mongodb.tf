@@ -29,7 +29,7 @@ resource "helm_release" "misarch_inventory_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -74,7 +74,7 @@ resource "helm_release" "misarch_invoice_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -91,9 +91,9 @@ resource "kubernetes_secret" "mongodb_credentials_invoice" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_invoice.result
-    "mongodb-passwords"         = random_password.misarch_invoice_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_invoice.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_invoice.result
+    "mongodb-passwords"       = random_password.misarch_invoice_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_invoice.result
   }
 }
 
@@ -111,7 +111,7 @@ resource "helm_release" "misarch_media_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -128,9 +128,9 @@ resource "kubernetes_secret" "mongodb_credentials_media" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_media.result
-    "mongodb-passwords"         = random_password.misarch_media_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_media.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_media.result
+    "mongodb-passwords"       = random_password.misarch_media_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_media.result
   }
 }
 
@@ -148,7 +148,7 @@ resource "helm_release" "misarch_order_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -165,9 +165,9 @@ resource "kubernetes_secret" "mongodb_credentials_order" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_order.result
-    "mongodb-passwords"         = random_password.misarch_order_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_order.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_order.result
+    "mongodb-passwords"       = random_password.misarch_order_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_order.result
   }
 }
 
@@ -185,7 +185,7 @@ resource "helm_release" "misarch_payment_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -202,9 +202,9 @@ resource "kubernetes_secret" "mongodb_credentials_payment" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_payment.result
-    "mongodb-passwords"         = random_password.misarch_payment_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_payment.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_payment.result
+    "mongodb-passwords"       = random_password.misarch_payment_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_payment.result
   }
 }
 
@@ -222,7 +222,7 @@ resource "helm_release" "misarch_review_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -239,9 +239,9 @@ resource "kubernetes_secret" "mongodb_credentials_review" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_review.result
-    "mongodb-passwords"         = random_password.misarch_review_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_review.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_review.result
+    "mongodb-passwords"       = random_password.misarch_review_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_review.result
   }
 }
 
@@ -259,7 +259,7 @@ resource "helm_release" "misarch_shoppingcart_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -276,9 +276,9 @@ resource "kubernetes_secret" "mongodb_credentials_shoppingcart" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_shoppingcart.result
-    "mongodb-passwords"         = random_password.misarch_shoppingcart_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_shoppingcart.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_shoppingcart.result
+    "mongodb-passwords"       = random_password.misarch_shoppingcart_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_shoppingcart.result
   }
 }
 
@@ -296,7 +296,7 @@ resource "helm_release" "misarch_wishlist_db" {
     image:
       tag: "${var.MONGODB_VERSION}"
     storage:
-      className: "${local.storage_class_name}"
+      className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
@@ -313,8 +313,8 @@ resource "kubernetes_secret" "mongodb_credentials_wishlist" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_wishlist.result
-    "mongodb-passwords"         = random_password.misarch_wishlist_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_wishlist.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_wishlist.result
+    "mongodb-passwords"       = random_password.misarch_wishlist_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_wishlist.result
   }
 }

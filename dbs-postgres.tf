@@ -9,7 +9,7 @@ resource "helm_release" "misarch_address_db" {
     <<-EOF
     fullnameOverride: "${local.address_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -37,7 +37,7 @@ resource "helm_release" "misarch_catalog_db" {
     <<-EOF
     fullnameOverride: "${local.catalog_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -64,7 +64,7 @@ resource "helm_release" "misarch_discount_db" {
     <<-EOF
     fullnameOverride: "${local.discount_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -92,7 +92,7 @@ resource "helm_release" "misarch_notification_db" {
     <<-EOF
     fullnameOverride: "${local.notification_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -120,7 +120,7 @@ resource "helm_release" "misarch_return_db" {
     <<-EOF
     fullnameOverride: "${local.return_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -148,7 +148,7 @@ resource "helm_release" "misarch_shipment_db" {
     <<-EOF
     fullnameOverride: "${local.shipment_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -176,7 +176,7 @@ resource "helm_release" "misarch_tax_db" {
     <<-EOF
     fullnameOverride: "${local.tax_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -204,7 +204,7 @@ resource "helm_release" "misarch_user_db" {
     <<-EOF
     fullnameOverride: "${local.user_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
@@ -232,7 +232,7 @@ resource "helm_release" "misarch_keycloak_db" {
     <<-EOF
     fullnameOverride: "${local.keycloak_db_service_name}"
     global:
-      storageClass: "${local.storage_class_name}"
+      storageClass: "${local.storage_class_name_ssd}"
     image:
       tag: "${var.POSTGRES_VERSION}"
     auth:
