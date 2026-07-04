@@ -11,6 +11,7 @@ import os
 import datetime
 import base64
 import shutil
+import threading
 import requests
 from sseclient import SSEClient
 from influxdb_client import InfluxDBClient
@@ -55,7 +56,7 @@ def make_path_absolute(base_path: str, filename: str)->str:
 		return filename
 	else:
 		return os.path.join(base_path, filename)
-	
+
 def read_validate_json(file_path: str):
 	with open(file_path, 'r') as f:
 		try:
@@ -72,7 +73,7 @@ def read_and_b64_encode(file_path: str):
 			return encoded
 		except Exception as e:
 			raise RuntimeError(f"Unexpected error reading file {file_path}: {e}")
-		
+
 
 def copy_file_to_destination(src_path: str, destination_root: str, base_dir: str | None = None):
 	abs_src = os.path.abspath(src_path)
@@ -184,7 +185,7 @@ def graphql_query(cluster_url: str, tokens, query, variables=None):
         # Update the existing dict so the caller automatically has the new tokens
         tokens.update(new_tokens)
         return send_request(tokens["access_token"])
-	
+
 def export_influxdb_to_csv(e_id: str, e_version: str, output_path: str):
 	token = read_terraform_output("influxdb_admin_token")
 	with InfluxDBClient(url=INFLUX_URL, token=token, org=INFLUX_ORG) as client:
@@ -194,17 +195,17 @@ def export_influxdb_to_csv(e_id: str, e_version: str, output_path: str):
 			response = query_client.query_raw(query=query, org=INFLUX_ORG)
 		except InfluxDBError as e:
 			raise RuntimeError(f"Influx query failed: {e}")
-	
+
 		csv_text = response.data.decode("utf-8").rstrip()
-	
+
 		if not csv_text:
 			raise RuntimeError("Influx query retruned no data")
-	
+
 		with open(output_path, "x") as f:
 			f.write(csv_text)
 			f.write("\n")
 
-	
+
 def read_terraform_output(name: str, terraform_dir=None):
 	"""Read a Terraform output value from the repository root or given directory."""
 	if terraform_dir is None:
@@ -218,8 +219,8 @@ def read_terraform_output(name: str, terraform_dir=None):
 	except subprocess.CalledProcessError as e:
 		stderr = e.stderr.strip() if e.stderr else str(e)
 		raise RuntimeError(f"Failed to read Terraform output '{name}': {stderr}")
-		
-		
+
+
 def start_port_forward(svc: str, local_port: int, remote_port: int):
 	'''Set up a port forward using kubectl.'''
 	cmd = [
@@ -267,7 +268,7 @@ def wait_for_port(host: str, port: int, timeout: float = 10.0):
 		except Exception:
 			time.sleep(0.2)
 	return False
-	
+
 def generate_experiment()->tuple[str,str]:
 	'''Generates a new experiment with default values. To override the default load configuration specify a gatling config'''
 	url = f"{URL}/experiment/generate?loadType=NormalLoadTest&testDuration=60&maximumArrivingUsersPerSecond=3"
@@ -282,22 +283,22 @@ def generate_experiment()->tuple[str,str]:
 			return tuple(str(data).split(':'))
 	except Exception as e:
 		raise RuntimeError(f"Failed to generate experiment: {e}")
-	
+
 
 def set_json_config(config: str, e_id: str, e_version: str, url: str):
 	'''Set a JSON config (Chaos Toolkit, MiSArch or global)
-	
+
 	Arguments:
 	config: relative path to the config file from experiments directory or absolute path
 	url: URL of the API endpoint
 	'''
 	conf_path = make_path_absolute(EXPERIMENTS_DIR, config)
-	
+
 	if not os.path.exists(conf_path):
 		raise FileNotFoundError(f"Config not found: {conf_path}")
-	
+
 	conf_obj = read_validate_json(conf_path)
-	
+
 	body = json.dumps(conf_obj).encode('utf-8')
 	headers = {"Content-Type": "application/json"}
 	req = urllib.request.Request(url, data=body, headers=headers, method="PUT")
@@ -328,7 +329,7 @@ def set_global_config(config: str, e_id: str, e_version: str, url: str):
 					obj[k] = e_id
 				if k == 'testVersion':
 					obj[k] = e_version
-		
+
 
 	_replace_test_uuid(conf_obj)
 
@@ -344,7 +345,7 @@ def set_global_config(config: str, e_id: str, e_version: str, url: str):
 				return raw.decode(errors='replace')
 	except Exception as e:
 		raise RuntimeError((f"Failed to update global config at {url}: {e}"))
-		
+
 
 def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
 	'''Set the gatling config of an experiment. Kotlin scripts and user steps CSV are base64 encoded and packaged into a JSON body'''
@@ -352,7 +353,7 @@ def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
 	for variant in config:
 		script_path = make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles", variant['loadScript']))
 		user_path = make_path_absolute(EXPERIMENTS_DIR, os.path.join("profiles", variant['userSteps']))
-		
+
 		if not os.path.exists(script_path) or not os.path.exists(user_path):
 			raise FileNotFoundError(f"Gatling config not found: {script_path} or {user_path}")
 		filename = variant["loadScript"].split("/")[-1][:-3]
@@ -361,7 +362,7 @@ def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
 		variant_obj['encodedWorkFileContent'] = read_and_b64_encode(script_path)
 		variant_obj['encodedUserStepsFileContent'] = read_and_b64_encode(user_path)
 		conf_obj.append(variant_obj)
-		
+
 	body = json.dumps(conf_obj).encode('utf-8')
 	headers = {"Content-Type": "application/json"}
 	req = urllib.request.Request(url, data=body, headers=headers, method="PUT")
@@ -374,7 +375,7 @@ def set_gatling_config(config: str, e_id: str, e_version: str, url: str):
 				return raw.decode(errors='replace')
 	except Exception as e:
 		raise RuntimeError((f"Failed to update config at {url}: {e}"))
-	
+
 
 def start_experiment(e_id: str, e_version: str):
 	start_url=f"{URL}/experiment/{e_id}/{e_version}/start"
@@ -387,7 +388,7 @@ def start_experiment(e_id: str, e_version: str):
 				raise RuntimeError("Failed to start experiment")
 	except Exception as e:
 		raise RuntimeError(f"Failed to start experiment")
-	
+
 
 def wait_for_event(e_id: str, e_version: str):
 	"""Wait for the first server sent event which signifies the experiment is completed
@@ -395,21 +396,21 @@ def wait_for_event(e_id: str, e_version: str):
 	"""
 	event_url = f"{URL}/experiment/{e_id}/{e_version}/events"
 	headers = {"Accept": "text/event-stream"}
-	
+
 	def with_urllib3(url: str):
 		"""Get a streaming response for the given event feed using urllib3."""
 		http = urllib3.PoolManager()
 		res = http.request('GET', url, preload_content=False, headers=headers)
 		yield from SSEClient(res).events()
-		
+
 	try:
 		for msg in with_urllib3(event_url):
 			print(msg)
 			return
 	except requests.exceptions.MissingSchema as e:
 		return
-	
-	
+
+
 def run_experiment(config):
 	e_id, e_version = generate_experiment()
 	print(f"Created experiment {e_id}:{e_version}")
@@ -437,12 +438,30 @@ def run_experiment(config):
 		e_version,
 		f"{URL}/experiment/{e_id}/{e_version}/gatlingConfig"
 	)
-	
+
 	start_experiment(e_id, e_version)
-	wait_for_event(e_id, e_version)
+
+	done = threading.Event()
+
+	def wait_in_background():
+		wait_for_event(e_id, e_version)
+		done.set()
+
+	thread = threading.Thread(target=wait_in_background, daemon=True)
+	thread.start()
+
+	spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+	start_ts = time.time()
+	i = 0
+	while not done.is_set():
+		elapsed = int(time.time() - start_ts)
+		print(f"\r  {spinner[i % len(spinner)]} Running... {elapsed}s", end='', flush=True)
+		i += 1
+		thread.join(timeout=0.1)
+	print(f"\r  Experiment completed after {int(time.time() - start_ts)}s")
 
 	return (e_id, e_version)
-        
+
 
 def cleanup_port_forward_processes(processes):
 	for svc, local_port, proc in processes:
@@ -502,6 +521,7 @@ def main():
 				#pre_inventory= snapshot_mongodb(inventory_db_path)
 
 				start_time=datetime.datetime.now()
+				print(f"Experiment starting at {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
 				e_id, e_version = run_experiment(experiment)
 				end_time=datetime.datetime.now()
 
@@ -527,7 +547,7 @@ def main():
 		sys.exit(3)
 	finally:
 		cleanup_port_forward_processes(port_forward_processes)
-		
+
         
 if __name__ == "__main__":
 	main()
