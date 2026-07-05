@@ -1,18 +1,21 @@
 {
-  "title": "Kill discount pod",
-  "description": "Terminates all pods of misarch-discount to test data consistency",
+  "title": "Kill discount",
+  "description": "Kills one pod of the misarch-discount service after 2 minutes",
   "steady-state-hypothesis": {
-    "title": "discount deployment healthy",
+    "title": "misarch-discount deployment healthy",
     "probes": [
       {
         "type": "probe",
-        "name": "discount pods running",
+        "name": "misarch-discount pods running",
         "tolerance": true,
         "provider": {
           "type": "python",
           "module": "chaosk8s.probes",
           "func": "deployment_available_and_healthy",
-          "arguments": { "name": "misarch-discount", "ns": "misarch" }
+          "arguments": {
+            "name": "misarch-discount",
+            "ns": "misarch"
+          }
         }
       }
     ]
@@ -20,17 +23,22 @@
   "method": [
     {
       "type": "action",
-      "name": "Kill discount pods during load",
+      "name": "Kill one misarch-discount pod under load",
       "provider": {
         "type": "python",
         "module": "chaosk8s.pod.actions",
         "func": "terminate_pods",
         "arguments": {
           "label_selector": "app=misarch-discount",
-          "ns": "misarch"
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
         }
       },
-      "pauses": { "before": 80, "after": 45 }
+      "pauses": {
+        "before": 120
+      }
     }
   ]
 }

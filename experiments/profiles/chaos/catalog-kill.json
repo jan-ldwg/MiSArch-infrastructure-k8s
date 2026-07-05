@@ -1,18 +1,21 @@
 {
-  "title": "Kill catalog pod",
-  "description": "Terminates all pods of misarch-catalog to test resilience",
+  "title": "Kill catalog",
+  "description": "Kills one pod of the misarch-catalog service after 2 minutes",
   "steady-state-hypothesis": {
-    "title": "catalog deployment healthy",
+    "title": "misarch-catalog deployment healthy",
     "probes": [
       {
         "type": "probe",
-        "name": "catalog pods running",
+        "name": "misarch-catalog pods running",
         "tolerance": true,
         "provider": {
           "type": "python",
           "module": "chaosk8s.probes",
           "func": "deployment_available_and_healthy",
-          "arguments": { "name": "misarch-catalog", "ns": "misarch" }
+          "arguments": {
+            "name": "misarch-catalog",
+            "ns": "misarch"
+          }
         }
       }
     ]
@@ -20,17 +23,22 @@
   "method": [
     {
       "type": "action",
-      "name": "Kill catalog pods during load",
+      "name": "Kill one misarch-catalog pod under load",
       "provider": {
         "type": "python",
         "module": "chaosk8s.pod.actions",
         "func": "terminate_pods",
         "arguments": {
           "label_selector": "app=misarch-catalog",
-          "ns": "misarch"
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
         }
       },
-      "pauses": { "before": 80, "after": 45 }
+      "pauses": {
+        "before": 120
+      }
     }
   ]
 }

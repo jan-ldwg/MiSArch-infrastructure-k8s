@@ -1,18 +1,21 @@
 {
-  "title": "Kill gateway pod",
-  "description": "Terminates all pods of misarch-gateway to test resilience",
+  "title": "Kill gateway",
+  "description": "Kills one pod of the misarch-gateway service after 2 minutes",
   "steady-state-hypothesis": {
-    "title": "gateway deployment healthy",
+    "title": "misarch-gateway deployment healthy",
     "probes": [
       {
         "type": "probe",
-        "name": "gateway pods running",
+        "name": "misarch-gateway pods running",
         "tolerance": true,
         "provider": {
           "type": "python",
           "module": "chaosk8s.probes",
           "func": "deployment_available_and_healthy",
-          "arguments": { "name": "misarch-gateway", "ns": "misarch" }
+          "arguments": {
+            "name": "misarch-gateway",
+            "ns": "misarch"
+          }
         }
       }
     ]
@@ -20,17 +23,22 @@
   "method": [
     {
       "type": "action",
-      "name": "Kill gateway pods during load",
+      "name": "Kill one misarch-gateway pod under load",
       "provider": {
         "type": "python",
         "module": "chaosk8s.pod.actions",
         "func": "terminate_pods",
         "arguments": {
           "label_selector": "app=misarch-gateway",
-          "ns": "misarch"
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
         }
       },
-      "pauses": { "before": 80, "after": 45 }
+      "pauses": {
+        "before": 120
+      }
     }
   ]
 }

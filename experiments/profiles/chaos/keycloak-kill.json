@@ -1,6 +1,6 @@
 {
-  "title": "Kill keycloak pod",
-  "description": "Terminates all keycloak pods to test auth resilience",
+  "title": "Kill keycloak",
+  "description": "Kills one keycloak pod after 2 minutes",
   "steady-state-hypothesis": {
     "title": "keycloak deployment healthy",
     "probes": [
@@ -12,7 +12,10 @@
           "type": "python",
           "module": "chaosk8s.probes",
           "func": "deployment_available_and_healthy",
-          "arguments": { "name": "keycloak", "ns": "misarch" }
+          "arguments": {
+            "name": "keycloak",
+            "ns": "misarch"
+          }
         }
       }
     ]
@@ -20,17 +23,22 @@
   "method": [
     {
       "type": "action",
-      "name": "Kill keycloak pods during load",
+      "name": "Kill one keycloak pod under load",
       "provider": {
         "type": "python",
         "module": "chaosk8s.pod.actions",
         "func": "terminate_pods",
         "arguments": {
           "label_selector": "app.kubernetes.io/name=keycloak",
-          "ns": "misarch"
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
         }
       },
-      "pauses": { "before": 80, "after": 45 }
+      "pauses": {
+        "before": 120
+      }
     }
   ]
 }

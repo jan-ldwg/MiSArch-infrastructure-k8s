@@ -1,18 +1,21 @@
 {
-  "title": "Kill review pod",
-  "description": "Terminates all pods of misarch-review to verify no order impact",
+  "title": "Kill review",
+  "description": "Kills one pod of the misarch-review service after 2 minutes",
   "steady-state-hypothesis": {
-    "title": "review deployment healthy",
+    "title": "misarch-review deployment healthy",
     "probes": [
       {
         "type": "probe",
-        "name": "review pods running",
+        "name": "misarch-review pods running",
         "tolerance": true,
         "provider": {
           "type": "python",
           "module": "chaosk8s.probes",
           "func": "deployment_available_and_healthy",
-          "arguments": { "name": "misarch-review", "ns": "misarch" }
+          "arguments": {
+            "name": "misarch-review",
+            "ns": "misarch"
+          }
         }
       }
     ]
@@ -20,17 +23,22 @@
   "method": [
     {
       "type": "action",
-      "name": "Kill review pods during load",
+      "name": "Kill one misarch-review pod under load",
       "provider": {
         "type": "python",
         "module": "chaosk8s.pod.actions",
         "func": "terminate_pods",
         "arguments": {
           "label_selector": "app=misarch-review",
-          "ns": "misarch"
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
         }
       },
-      "pauses": { "before": 80, "after": 45 }
+      "pauses": {
+        "before": 120
+      }
     }
   ]
 }

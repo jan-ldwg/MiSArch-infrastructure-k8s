@@ -1,18 +1,21 @@
 {
-  "title": "Kill tax pod",
-  "description": "Terminates all pods of misarch-tax to test data consistency",
+  "title": "Kill tax",
+  "description": "Kills one pod of the misarch-tax service after 2 minutes",
   "steady-state-hypothesis": {
-    "title": "tax deployment healthy",
+    "title": "misarch-tax deployment healthy",
     "probes": [
       {
         "type": "probe",
-        "name": "tax pods running",
+        "name": "misarch-tax pods running",
         "tolerance": true,
         "provider": {
           "type": "python",
           "module": "chaosk8s.probes",
           "func": "deployment_available_and_healthy",
-          "arguments": { "name": "misarch-tax", "ns": "misarch" }
+          "arguments": {
+            "name": "misarch-tax",
+            "ns": "misarch"
+          }
         }
       }
     ]
@@ -20,17 +23,22 @@
   "method": [
     {
       "type": "action",
-      "name": "Kill tax pods during load",
+      "name": "Kill one misarch-tax pod under load",
       "provider": {
         "type": "python",
         "module": "chaosk8s.pod.actions",
         "func": "terminate_pods",
         "arguments": {
           "label_selector": "app=misarch-tax",
-          "ns": "misarch"
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
         }
       },
-      "pauses": { "before": 80, "after": 45 }
+      "pauses": {
+        "before": 120
+      }
     }
   ]
 }
