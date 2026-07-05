@@ -33,7 +33,7 @@ resource "kubernetes_deployment" "misarch_order" {
 
           resources {
             limits = {
-              cpu    = "500m"
+              cpu    = "5000m"
               memory = "1200Mi"
             }
             requests = {

@@ -364,6 +364,7 @@ resource "kubernetes_config_map" "misarch_order_env_vars" {
   data = {
     "ME_CONFIG_MONGODB_URL" = "mongodb://${local.order_db_url}"
     "MONGODB_URI"           = "mongodb://${local.order_db_url}"
+    "RUST_LOG"              = "mongodb=trace"
   }
 }
 

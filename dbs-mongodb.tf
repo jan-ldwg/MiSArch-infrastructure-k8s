@@ -150,6 +150,13 @@ resource "helm_release" "misarch_order_db" {
     storage:
       className: "${local.storage_class_name_ssd}"
       requestedSize: "8Gi"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1024Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
     service:
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
