@@ -7,6 +7,25 @@ locals {
   review_db_secret_name       = "mongodb-credentials-review"
   shoppingcart_db_secret_name = "mongodb-credentials-shoppingcart"
   wishlist_db_secret_name     = "mongodb-credentials-wishlist"
+
+  # TCP socket probes replace the default mongosh exec probes,
+  # which spawn a Node.js process that can exceed the 5s timeout.
+  mongodb_probe_config = <<-EOT
+    customLivenessProbe:
+      tcpSocket:
+        port: 27017
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 3
+      timeoutSeconds: 5
+    customReadinessProbe:
+      tcpSocket:
+        port: 27017
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      failureThreshold: 3
+      timeoutSeconds: 5
+  EOT
 }
 
 # TODO fix the auth of all MongoDBs, somehow they do not start up when auth is enabled
@@ -43,6 +62,7 @@ resource "helm_release" "misarch_inventory_db" {
     settings:
       rootUsername: "root"
       rootPassword: "${random_password.mongodb_root_password_inventory.result}"
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -80,6 +100,7 @@ resource "helm_release" "misarch_invoice_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -117,6 +138,7 @@ resource "helm_release" "misarch_media_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -154,6 +176,7 @@ resource "helm_release" "misarch_order_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -191,6 +214,7 @@ resource "helm_release" "misarch_payment_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -228,6 +252,7 @@ resource "helm_release" "misarch_review_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -265,6 +290,7 @@ resource "helm_release" "misarch_shoppingcart_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
@@ -302,6 +328,7 @@ resource "helm_release" "misarch_wishlist_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+    ${local.mongodb_probe_config}
     EOF
   ]
 }
