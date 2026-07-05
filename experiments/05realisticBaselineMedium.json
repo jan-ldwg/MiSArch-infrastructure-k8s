@@ -1,8 +1,8 @@
 {
   "experiments": [
     {
-      "testName": "Basic test",
-      "description": "Test with moderate load and no fault injections",
+      "testName": "Baseline with realistic load script",
+      "description": "This test uses defaults the improved load script and medium load.",
       "gatlingConfig": [
         {
           "loadScript": "gatling/realisticBuyProcess.kt",
@@ -11,7 +11,7 @@
       ],
       "chaosConfig": "chaos/none.json",
       "misarchConfig": "misarch/none.json",
-      "globalConfig": "global/warmup50-60s.json"
+      "globalConfig": "global/warmup10-60s.json"
     }
   ]
 }

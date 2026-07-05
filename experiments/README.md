@@ -28,7 +28,8 @@ The experiment config can contain one or more experiments you want to run. It is
         },
     ],
     "chaosConfig": "chaos/none.json",
-    "misarchConfig": "misarch/none.json"
+    "misarchConfig": "misarch/none.json",
+    "globalConfig": "gloabl/none.json"
   }
 ]
 ```

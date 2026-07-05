@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Baseline with MiSArch defaults",
+      "description": "This test uses defaults provided by the MiSArch project and medium load.",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/realistic75-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}
