@@ -1,5 +1,14 @@
 # Misarch Kubernetes Infrastructure
 
+## Links to updated service image repositories
+
+- https://github.com/frankakn7/misarch-catalog
+- https://github.com/frankakn7/misarch-invoice
+- https://github.com/frankakn7/misarch-order
+- https://github.com/frankakn7/misarch-discount
+- https://github.com/frankakn7/misarch-testdata
+
+
 ## Overview
 
 This repository contains the Terraform scripts responsible for orchestrating the deployment of the Misarch Platform on a Kubernetes cluster.
