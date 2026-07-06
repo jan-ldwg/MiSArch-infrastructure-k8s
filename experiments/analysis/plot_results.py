@@ -94,41 +94,39 @@ ENDPOINT_NAMES = {
 
 
 def parse_influxdb_csv(filepath: str) -> dict:
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
+    """Parse InfluxDB annotated CSV — handles row-per-line format from Jan's export."""
+    with open(filepath, "rb") as f:
+        content = f.read().decode("utf-8")
 
-    blocks = content.strip().split("\n\n")
-    all_dfs = []
+    lines = content.splitlines()
+    data_lines = []
+    header = None
 
-    for block in blocks:
-        lines = block.strip().split("\n")
-        header_idx = None
-        for j, line in enumerate(lines):
-            if "_time" in line and "_value" in line:
-                header_idx = j
-                break
-        if header_idx is None:
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
             continue
-        try:
-            df = pd.read_csv(io.StringIO("\n".join(lines[header_idx:])))
-            df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
-            df = df.dropna(subset=["_time", "_value", "_measurement"])
-            df["_time"] = pd.to_datetime(
-                df["_time"], utc=True, errors="coerce"
-            ).dt.tz_convert(None)
-            df["_value"] = pd.to_numeric(df["_value"], errors="coerce")
-            df = df.dropna(subset=["_time", "_value"])
-            all_dfs.append(df)
-        except Exception:
+        if ",result," in line or line.startswith(",result,"):
+            if header is None:
+                header = line
             continue
+        if header and line.startswith(",,"):
+            data_lines.append(line)
 
-    if not all_dfs:
-        print(f"ERROR: Could not parse any data from {filepath}", file=sys.stderr)
+    if not header or not data_lines:
+        print(f"ERROR: Could not parse data from {filepath}", file=sys.stderr)
         sys.exit(1)
 
-    combined = pd.concat(all_dfs, ignore_index=True)
+    df = pd.read_csv(io.StringIO(header + "\n" + "\n".join(data_lines)))
+    df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
+    df["_time"] = pd.to_datetime(
+        df["_time"], utc=True, errors="coerce", format="mixed"
+    ).dt.tz_convert(None)
+    df["_value"] = pd.to_numeric(df["_value"], errors="coerce")
+    df = df.dropna(subset=["_time", "_value", "_measurement"])
+
     result = {}
-    for meas, group in combined.groupby("_measurement"):
+    for meas, group in df.groupby("_measurement"):
         result[meas] = group.copy().sort_values("_time").reset_index(drop=True)
     return result
 
@@ -213,8 +211,9 @@ def plot_timeseries(data_list, labels, output_path):
     style_ax(ax, f"Responses (ok/ko) — {labels[0]}")
     if "responses" in data_list[0]:
         df = data_list[0]["responses"]
+        flavor_col = "flavor" if "flavor" in df.columns else "scenario"
         pivoted = df.pivot_table(
-            index="_time", columns="flavor", values="_value", aggfunc="sum"
+            index="_time", columns=flavor_col, values="_value", aggfunc="sum"
         )
         pivoted = pivoted.reindex(columns=["ok", "ko"]).fillna(0)
         time = pivoted.index
@@ -242,7 +241,8 @@ def plot_timeseries(data_list, labels, output_path):
     for i, (data, label) in enumerate(zip(data_list, labels)):
         if "responses" in data:
             df = data["responses"]
-            ko = df[df["flavor"] == "ko"]
+            flavor_col = "flavor" if "flavor" in df.columns else "scenario"
+            ko = df[df[flavor_col] == "ko"]
             if not ko.empty:
                 ax.plot(
                     ko["_time"],

@@ -4,7 +4,7 @@
       "testName": "API Chain - Kill Order Service",
       "description": "Kill misarch-order pod during load. Hypothesis: 100% order creation failure.",
       "gatlingConfig": [
-        { "loadScript": "gatling/realisticBuyProcess.kt", "userSteps": "gatling/realistic75-600s.csv" }
+        { "loadScript": "gatling/realisticBuyProcess.kt", "userSteps": "gatling/realistic10-600s.csv" }
       ],
       "chaosConfig": "chaos/order-kill.json",
       "misarchConfig": "misarch/none.json",

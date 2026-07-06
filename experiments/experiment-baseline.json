@@ -4,7 +4,7 @@
       "testName": "Baseline - No Chaos",
       "description": "Baseline run with no fault injections",
       "gatlingConfig": [
-        { "loadScript": "gatling/realisticBuyProcess.kt", "userSteps": "gatling/realistic75-600s.csv" }
+        { "loadScript": "gatling/realisticBuyProcess.kt", "userSteps": "gatling/realistic10-600s.csv" }
       ],
       "chaosConfig": "chaos/none.json",
       "misarchConfig": "misarch/none.json",
