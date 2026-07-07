@@ -118,6 +118,29 @@ resource "kubectl_manifest" "dapr_pubsub_config_experiment_config" {
   EOF
 }
 
+resource "kubectl_manifest" "dapr_resiliency_inventory_retry" {
+  depends_on = [helm_release.dapr]
+  yaml_body  = <<-EOF
+  apiVersion: dapr.io/v1alpha1
+  kind: Resiliency
+  metadata:
+    name: "inventory-retry"
+    namespace: ${local.namespace}
+  spec:
+    policies:
+      retries:
+        inventoryRetry:
+          policy: exponential
+          initialInterval: 200ms
+          maxInterval: 800ms
+          maxRetries: 3
+    targets:
+      apps:
+        inventory:
+          retry: inventoryRetry
+  EOF
+}
+
 resource "kubectl_manifest" "dapr_config" {
   depends_on = [helm_release.dapr]
   yaml_body  = <<-EOF
@@ -141,5 +164,5 @@ resource "kubectl_manifest" "dapr_config" {
 // Pseudo resource so that all services can simply depend on this resource instead of the whole list ↓
 resource "terraform_data" "dapr" {
   depends_on = [helm_release.dapr, kubectl_manifest.dapr_config, kubectl_manifest.dapr_pubsub_config_experiment_config,
-    kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config]
+  kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config, kubectl_manifest.dapr_resiliency_inventory_retry]
 }
