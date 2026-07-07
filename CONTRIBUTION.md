@@ -26,8 +26,6 @@
 - set up overleaf project
 - extended visualization script to include all endpoints
 - debugged jaeger deployment
-- added tracing to order service
-- run initial experiments with different work scripts and load levels
 
 ## Maryam
 
