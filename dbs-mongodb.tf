@@ -54,6 +54,8 @@ resource "helm_release" "misarch_inventory_db" {
       # misarch services hardcode `<name>-headless` as their mongo DNS target
       # (legacy from the Bitnami chart's headless-service naming convention).
       headlessServiceSuffix: headless
+      annotations:
+        cloud.google.com/neg: '{"exposed_ports":{}}'
     replicaSet:
       enabled: true
       name: "repl"
@@ -62,6 +64,13 @@ resource "helm_release" "misarch_inventory_db" {
     settings:
       rootUsername: "root"
       rootPassword: "${random_password.mongodb_root_password_inventory.result}"
+    customStartupProbe:
+      tcpSocket:
+        port: 27017
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 5
+      failureThreshold: 30
     ${local.mongodb_probe_config}
     EOF
   ]
