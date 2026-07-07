@@ -206,6 +206,33 @@ def export_influxdb_to_csv(e_id: str, e_version: str, output_path: str):
 			f.write("\n")
 
 
+def get_git_info():
+	"""Return current git branch, commit hash, and uncommitted changes."""
+	def _run(args):
+		try:
+			r = subprocess.run(
+				["git"] + args,
+				cwd=REPO_ROOT,
+				capture_output=True, text=True, timeout=5
+			)
+			return r.stdout.strip() if r.returncode == 0 else None
+		except Exception:
+			return None
+
+	branch = _run(["rev-parse", "--abbrev-ref", "HEAD"]) or "unknown"
+	commit = _run(["rev-parse", "HEAD"]) or "unknown"
+	message = _run(["log", "-1", "--format=%B"]) or "unknown"
+	status = _run(["status", "--porcelain"])
+
+	return {
+		"branch": branch,
+		"commit": commit,
+		"message": message,
+		"dirty": bool(status),
+		"uncommitted": status.split("\n") if status else [],
+	}
+
+
 def read_terraform_output(name: str, terraform_dir=None):
 	"""Read a Terraform output value from the repository root or given directory."""
 	if terraform_dir is None:
@@ -488,6 +515,8 @@ def main():
 	parser = argparse.ArgumentParser(prog="Experiment runner", description="Run automated experiments against the MiSArch system")
 	parser.add_argument('-f', '--file', required=True, help='Filename inside the experiments directory')
 	args = parser.parse_args()
+	git_info = get_git_info()
+	print(f"Git: branch={git_info['branch']}, commit={git_info['commit'][:8]}, dirty={git_info['dirty']}")
 
 	path = make_path_absolute(EXPERIMENTS_DIR, args.file)
 
@@ -527,6 +556,8 @@ def main():
 
 				experiment_path = os.path.join(results_path, f"{e_id}:{e_version}")
 				copy_experiment_files(path, experiment, experiment_path)
+				with open(os.path.join(experiment_path, "git.json"), 'x') as f:
+					json.dump(git_info, f, indent=2)
 				export_influxdb_to_csv(e_id, e_version, os.path.join(experiment_path, "results.csv"))
 				#post_inventory = snapshot_mongodb(inventory_db_path)
 				end_products=graphql_query(cluster_url, credentials, PRODUCT_QUERY)
