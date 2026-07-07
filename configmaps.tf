@@ -260,7 +260,7 @@ resource "kubernetes_config_map" "misarch_inventory_env_vars" {
   }
 
   data = {
-    "DATABASE_URI"                  = "mongodb://root:${random_password.mongodb_root_password_inventory.result}@${local.inventory_db_url}"
+    "DATABASE_URI"                  = "mongodb://${local.inventory_db_url}"
     "OTEL_NODE_RESOURCE_DETECTORS"  = "env,host,os"
     "OTEL_SERVICE_NAME"             = "payment"
     "OTEL_SEMCONV_STABILITY_OPT_IN" = "http"
