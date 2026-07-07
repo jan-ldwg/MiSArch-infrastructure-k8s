@@ -15,14 +15,27 @@ resource "helm_release" "redis" {
   # Everything depends on redis being ready quickly, so decrease the preset timelimit and rather let it fail a few times to save some setup time
   master:
     readinessProbe:
-      enabled: false
+      enabled: true
+      initialDelaySeconds: 0
+      periodSeconds: 5
+      failureThreshold: 3
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 300
+      periodSeconds: 10
+      failureThreshold: 3
+    resources:
+      limits:
+        memory: "400Mi"
+      requests:
+        memory: "256Mi"
     extraFlags:
       - "--appendonly no"
-      - "--save 900 1"
-      - "--save 300 10"
-      - "--save 60 10000"
+      - "--save \"\""
+      - "--maxmemory 350mb"
+      - "--maxmemory-policy allkeys-lru"
     persistence:
-      enabled: true
+      enabled: false
     terminationGracePeriodSeconds: 30
 
   replica:
