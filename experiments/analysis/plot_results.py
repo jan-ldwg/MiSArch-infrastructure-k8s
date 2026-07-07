@@ -208,7 +208,7 @@ def plot_timeseries(data_list, labels, output_path):
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=30, ha="right", color=TEXT)
 
-    # Panel 2: Responses ok/ko stacked (first run)
+    # Panel 2: Responses ok/ko line plot (first run)
     ax = axes[2]
     style_ax(ax, f"Responses (ok/ko) — {labels[0]}")
     if "responses" in data_list[0]:
@@ -219,17 +219,11 @@ def plot_timeseries(data_list, labels, output_path):
         pivoted = pivoted.reindex(columns=["ok", "ko"]).fillna(0)
         time = pivoted.index
 
-        ax.fill_between(
-            time, 0, pivoted["ok"], color=COLORS[0], alpha=0.6, label="OK", linewidth=0
+        ax.plot(
+            time, pivoted["ok"], color=COLORS[0], linewidth=2, label="OK"
         )
-        ax.fill_between(
-            time,
-            pivoted["ok"],
-            pivoted["ok"] + pivoted["ko"],
-            color=COLOR_KO,
-            alpha=0.6,
-            label="KO",
-            linewidth=0,
+        ax.plot(
+            time, pivoted["ko"], color=COLOR_KO, linewidth=2, label="KO"
         )
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
     ax.set_ylabel("Responses / interval", color=TEXT, fontsize=8)
