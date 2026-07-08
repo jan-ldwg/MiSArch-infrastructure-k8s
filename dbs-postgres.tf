@@ -45,6 +45,14 @@ resource "helm_release" "misarch_catalog_db" {
       username: "${var.MISARCH_DB_USER}"
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_catalog_db_password.result}"
+    primary:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "150Mi"
+        limits:
+          cpu: "750m"
+          memory: "768Mi"
     metrics:
       # Disabled: bitnamilegacy/postgres-exporter expects the postgres
       # superuser password file, but `auth.enablePostgresUser: false` means
@@ -53,6 +61,7 @@ resource "helm_release" "misarch_catalog_db" {
     EOF
   ]
 }
+
 resource "helm_release" "misarch_discount_db" {
   name       = local.discount_db_service_name
   repository = "oci://registry-1.docker.io/bitnamicharts"
@@ -72,6 +81,14 @@ resource "helm_release" "misarch_discount_db" {
       username: "${var.MISARCH_DB_USER}"
       database: "${var.MISARCH_DB_DATABASE}"
       password: "${random_password.misarch_discount_db_password.result}"
+    primary:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "150Mi"
+        limits:
+          cpu: "750m"
+          memory: "768Mi"
     metrics:
       # Disabled: bitnamilegacy/postgres-exporter expects the postgres
       # superuser password file, but `auth.enablePostgresUser: false` means
@@ -240,6 +257,14 @@ resource "helm_release" "misarch_keycloak_db" {
       username: ${var.KEYCLOAK_DB_USER}
       database: ${var.KEYCLOAK_DB_DATABASE}
       password: "${random_password.keycloak_db_password.result}"
+    primary:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "150Mi"
+        limits:
+          cpu: "750m"
+          memory: "768Mi"
     metrics:
       enabled: false
     EOF
