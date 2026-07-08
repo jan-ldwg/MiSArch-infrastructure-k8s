@@ -51,6 +51,16 @@ resource "kubernetes_deployment" "misarch_return" {
               name = local.misarch_return_env_vars_configmap
             }
           }
+          startup_probe {
+            http_get {
+              path = "/health"
+              port = 8080
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 10
+            failure_threshold     = 18
+            timeout_seconds       = 5
+          }
         }
 
         container {
@@ -79,7 +89,7 @@ resource "kubernetes_deployment" "misarch_return" {
       }
     }
   }
-   lifecycle {
+  lifecycle {
     ignore_changes = [spec[0].replicas]
   }
 }
@@ -107,6 +117,31 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "return-hpa" {
         target {
           type                = "Utilization"
           average_utilization = 70
+        }
+      }
+    }
+    behavior {
+      scale_up {
+        stabilization_window_seconds = 60
+        select_policy = "Max"
+        policy {
+          type           = "Pods"
+          value          = 1
+          period_seconds = 60
+        }
+        policy {
+          type           = "Percent"
+          value          = 50
+          period_seconds = 60
+        }
+      }
+      scale_down {
+        stabilization_window_seconds = 300
+        select_policy = "Max"
+        policy {
+          type           = "Percent"
+          value          = 50
+          period_seconds = 60
         }
       }
     }

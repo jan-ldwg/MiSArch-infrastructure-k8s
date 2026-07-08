@@ -52,6 +52,16 @@ resource "kubernetes_deployment" "misarch_invoice" {
               name = local.misarch_invoice_env_vars_configmap
             }
           }
+          startup_probe {
+            http_get {
+              path = "/health"
+              port = 8080
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 10
+            failure_threshold     = 18
+            timeout_seconds       = 5
+          }
         }
 
         container {
@@ -80,7 +90,7 @@ resource "kubernetes_deployment" "misarch_invoice" {
       }
     }
   }
-    lifecycle {
+  lifecycle {
     ignore_changes = [spec[0].replicas]
   }
 }
