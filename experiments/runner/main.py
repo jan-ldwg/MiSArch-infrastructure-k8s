@@ -187,7 +187,7 @@ def graphql_query(cluster_url: str, tokens, query, variables=None):
         return send_request(tokens["access_token"])
 
 def export_influxdb_to_csv(e_id: str, e_version: str, output_path: str):
-	token = "t-Uk5ZhIlURBpk_hjPM3Q0mfIAa7Qbu2a9_zcsQXXXc8f1TVS0Z31W9naMp5N1sMs9OMmbpWjsFDnxViO8G4NQ=="
+	token = "lrAZg1ta7oHXn81bTBjEdxWvPPefnxvA"
 	with InfluxDBClient(url=INFLUX_URL, token=token, org=INFLUX_ORG) as client:
 		query = f'from(bucket:"{INFLUX_BUCKET}") |> range(start: 0) |> filter(fn:(r) => r.testUUID == "{e_id}")'
 		try:
@@ -496,7 +496,7 @@ def main():
 		print(f"Terraform global_domain: {cluster_url}")
 	except RuntimeError as e:
 		print(f"Warning: could not read Terraform global_domain: {e}", file=sys.stderr)
-		cluster_url = "http://35.246.180.195"
+		cluster_url = "http://35.198.157.206"
 
 	port_forward_processes = start_port_forwards(PORT_FORWARDS)
 	if not port_forward_processes:

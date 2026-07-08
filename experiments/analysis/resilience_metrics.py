@@ -2,31 +2,23 @@
 """
 MiSArch Resilience Metrics Calculator
 ======================================
-Calculates MTTR and related resilience metrics from InfluxDB CSV exports.
+Calculates meaningful resilience metrics from InfluxDB CSV exports
+for pod kill chaos experiments.
 
-For controlled chaos experiments (pod kill at t=120s), the key measurable
-metrics are:
-  - MTTR: Mean Time To Recovery — time from failure injection until
-          error rate returns to within 10% of baseline
-  - Error rate during failure window
-  - Impact severity: % increase in KO requests vs baseline
-  - Orders lost: inventory consumed vs baseline expectation
+Metrics reported:
+  - Failure rate increase vs baseline
+  - Additional KO requests caused by chaos
+  - P95 / P99 / Max response time change
+  - Data consistency (orders placed via inventory delta)
 
 Usage:
-    # Calculate metrics for one chaos experiment vs baseline:
     python3 resilience_metrics.py \
         --baseline baseline/results.csv \
-        --chaos order_kill_1replica/results.csv \
-        --kill-time 120 \
-        --label "Order Kill (1 Replica)"
-
-    # Compare before/after fix:
-    python3 resilience_metrics.py \
-        --baseline baseline/results.csv \
-        --chaos order_kill_1replica/results.csv \
-                order_kill_2replicas/results.csv \
-        --labels "1 Replica (Before Fix)" "2 Replicas (After Fix)" \
-        --kill-time 120
+        --chaos order_kill_1rep/results.csv order_kill_2rep/results.csv \
+        --labels "1 Replica" "2 Replicas" \
+        --consistency baseline/consistency.json \
+                      order_kill_1rep/consistency.json \
+                      order_kill_2rep/consistency.json
 
 Requirements:
     pip install pandas matplotlib
@@ -38,32 +30,46 @@ import io
 import os
 import json
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 from pathlib import Path
 
 
-# ── Style ─────────────────────────────────────────────────────────────────────
-BG    = "#1a1a2e"
-PANEL = "#16213e"
-TEXT  = "#e0e0e0"
-GRID  = "#333355"
-COLOR_BASELINE = "#4CAF50"
-COLOR_CHAOS    = ["#F44336", "#FF9800", "#2196F3", "#9C27B0"]
+# ── Style — matches plot_results.py scientific paper theme ────────────────────
+BG     = "#ffffff"
+PANEL  = "#ffffff"
+TEXT   = "#000000"
+GRID   = "#b0b0b0"
+COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#9467bd", "#8c564b"]
+
+matplotlib.rcParams.update({
+    "font.family":        "serif",
+    "font.size":          10,
+    "axes.titlesize":     11,
+    "axes.labelsize":     9,
+    "xtick.labelsize":    8,
+    "ytick.labelsize":    8,
+    "legend.fontsize":    8,
+    "figure.facecolor":   BG,
+    "axes.facecolor":     PANEL,
+    "savefig.facecolor":  BG,
+    "grid.color":         GRID,
+    "grid.linestyle":     "--",
+    "axes.edgecolor":     "#000000",
+})
 
 
 # ── CSV Parsing ───────────────────────────────────────────────────────────────
 
 def parse_csv(filepath: str) -> pd.DataFrame:
-    """Parse InfluxDB annotated CSV export."""
     with open(filepath, "rb") as f:
         content = f.read().decode("utf-8")
 
     lines = content.splitlines()
-    data_lines = []
-    header = None
-
+    data_lines, header = [], None
     for line in lines:
         line = line.strip()
         if not line or line.startswith("#"):
@@ -89,236 +95,137 @@ def parse_csv(filepath: str) -> pd.DataFrame:
     return df
 
 
-def get_timeseries(df: pd.DataFrame, measurement: str,
-                   flavor: str = None) -> pd.DataFrame:
-    """Extract a time series for a specific measurement."""
-    sub = df[df["_measurement"] == measurement].copy()
-    if flavor and "flavor" in sub.columns:
-        sub = sub[sub["flavor"] == flavor]
-    return sub.sort_values("_time").reset_index(drop=True)
-
-
-def get_stat(df: pd.DataFrame, measurement: str) -> float:
-    """Get the single summary stat value for a measurement."""
+def get_stat(df: pd.DataFrame, measurement: str) -> float | None:
     sub = df[df["_measurement"] == measurement]["_value"].dropna()
     return float(sub.iloc[0]) if not sub.empty else None
 
 
-def elapsed_seconds(df: pd.DataFrame, col: str = "_time") -> pd.Series:
-    """Convert timestamps to seconds from experiment start."""
-    t0 = df[col].min()
-    return (df[col] - t0).dt.total_seconds()
+def get_timeseries(df: pd.DataFrame, measurement: str, flavor: str = None) -> pd.DataFrame:
+    sub = df[df["_measurement"] == measurement].copy()
+    if flavor:
+        if "flavor" in sub.columns:
+            sub = sub[sub["flavor"] == flavor]
+        elif "scenario" in sub.columns:
+            sub = sub[sub["scenario"] == flavor]
+    return sub.sort_values("_time").reset_index(drop=True)
 
 
-# ── Metrics Calculation ───────────────────────────────────────────────────────
+# ── Impact Metrics ────────────────────────────────────────────────────────────
 
-def calculate_mttr(chaos_df: pd.DataFrame, baseline_df: pd.DataFrame,
-                   kill_time_s: float, recovery_threshold: float = 0.1) -> dict:
-    """
-    Calculate MTTR (Mean Time To Recovery).
-
-    Method:
-    1. Get baseline KO rate (responses with flavor='ko' as % of all responses)
-    2. Find the point after the kill where KO rate returns to within
-       `recovery_threshold` (default 10%) above baseline
-    3. MTTR = that timestamp - kill timestamp
-
-    Returns dict with:
-        kill_time_s: when the pod was killed
-        recovery_time_s: when the system recovered
-        mttr_s: recovery time in seconds
-        peak_ko_rate: maximum KO rate observed during failure
-        baseline_ko_rate: KO rate before failure
-    """
-    result = {
-        "kill_time_s": kill_time_s,
-        "recovery_time_s": None,
-        "mttr_s": None,
-        "peak_ko_rate": None,
-        "baseline_ko_rate": None,
-        "no_recovery_detected": False,
-    }
-
-    # Get baseline KO rate
-    baseline_ko = get_timeseries(baseline_df, "responses", "ko")
-    baseline_all = get_timeseries(baseline_df, "responses", "all")
-
-    if baseline_ko.empty or baseline_all.empty:
-        result["no_recovery_detected"] = True
-        return result
-
-    # Baseline KO rate as fraction of total responses
-    b_ko_total = baseline_ko["_value"].sum()
-    b_all_total = baseline_all["_value"].sum()
-    baseline_ko_rate = b_ko_total / b_all_total if b_all_total > 0 else 0
-    result["baseline_ko_rate"] = baseline_ko_rate
-
-    # Chaos KO rate over time
-    chaos_ko = get_timeseries(chaos_df, "responses", "ko")
-    chaos_all = get_timeseries(chaos_df, "responses", "all")
-
-    if chaos_ko.empty or chaos_all.empty:
-        result["no_recovery_detected"] = True
-        return result
-
-    # Align on elapsed seconds
-    t0 = chaos_ko["_time"].min()
-    chaos_ko = chaos_ko.copy()
-    chaos_ko["elapsed"] = (chaos_ko["_time"] - t0).dt.total_seconds()
-
-    chaos_all_t = chaos_all.copy()
-    chaos_all_t["elapsed"] = (chaos_all_t["_time"] - t0).dt.total_seconds()
-
-    # Merge ko and all on elapsed time
-    merged = pd.merge_asof(
-        chaos_ko.sort_values("elapsed")[["elapsed", "_value"]].rename(columns={"_value": "ko"}),
-        chaos_all_t.sort_values("elapsed")[["elapsed", "_value"]].rename(columns={"_value": "all"}),
-        on="elapsed", direction="nearest", tolerance=5
-    ).dropna()
-
-    merged["ko_rate"] = merged["ko"] / merged["all"].replace(0, np.nan)
-    merged = merged.dropna(subset=["ko_rate"])
-
-    # Peak KO rate after kill
-    post_kill = merged[merged["elapsed"] >= kill_time_s]
-    if post_kill.empty:
-        result["no_recovery_detected"] = True
-        return result
-
-    result["peak_ko_rate"] = float(post_kill["ko_rate"].max())
-
-    # Find recovery: first point after kill where ko_rate <= baseline + threshold
-    recovery_level = baseline_ko_rate + recovery_threshold
-    recovered = post_kill[post_kill["ko_rate"] <= recovery_level]
-
-    if recovered.empty:
-        result["no_recovery_detected"] = True
-        return result
-
-    recovery_elapsed = float(recovered["elapsed"].iloc[0])
-    result["recovery_time_s"] = recovery_elapsed
-    result["mttr_s"] = recovery_elapsed - kill_time_s
-
-    return result
-
-
-def calculate_impact(chaos_df: pd.DataFrame, baseline_df: pd.DataFrame,
-                     kill_time_s: float, recovery_time_s: float = None) -> dict:
-    """Calculate impact metrics during the failure window."""
+def calculate_impact(chaos_df: pd.DataFrame, baseline_df: pd.DataFrame) -> dict:
     result = {}
 
-    # Total requests comparison
-    baseline_total = get_stat(baseline_df, "numberOfRequestsTotal")
-    chaos_total = get_stat(chaos_df, "numberOfRequestsTotal")
-    baseline_ok = get_stat(baseline_df, "numberOfRequestsOk")
-    chaos_ok = get_stat(chaos_df, "numberOfRequestsOk")
-    baseline_ko = get_stat(baseline_df, "numberOfRequestsKo")
-    chaos_ko = get_stat(chaos_df, "numberOfRequestsKo")
+    result["baseline_total"]   = get_stat(baseline_df, "numberOfRequestsTotal")
+    result["chaos_total"]      = get_stat(chaos_df,    "numberOfRequestsTotal")
+    result["baseline_ok"]      = get_stat(baseline_df, "numberOfRequestsOk")
+    result["chaos_ok"]         = get_stat(chaos_df,    "numberOfRequestsOk")
+    result["baseline_ko"]      = get_stat(baseline_df, "numberOfRequestsKo")
+    result["chaos_ko"]         = get_stat(chaos_df,    "numberOfRequestsKo")
 
-    result["baseline_total_requests"] = baseline_total
-    result["chaos_total_requests"] = chaos_total
-    result["baseline_ok_requests"] = baseline_ok
-    result["chaos_ok_requests"] = chaos_ok
-    result["baseline_ko_requests"] = baseline_ko
-    result["chaos_ko_requests"] = chaos_ko
+    b_ko = result["baseline_ko"] or 0
+    c_ko = result["chaos_ko"]    or 0
+    result["additional_failures"] = c_ko - b_ko
 
-    # Extra failures caused by the chaos
-    if baseline_ko is not None and chaos_ko is not None:
-        result["additional_failures"] = chaos_ko - baseline_ko
-    else:
-        result["additional_failures"] = None
+    b_fail = get_stat(baseline_df, "group4Percentage") or 0
+    c_fail = get_stat(chaos_df,    "group4Percentage") or 0
+    result["baseline_failure_pct"]  = b_fail
+    result["chaos_failure_pct"]     = c_fail
+    result["failure_rate_increase"] = c_fail - b_fail
 
-    # Failure rate comparison
-    baseline_fail_pct = get_stat(baseline_df, "group4Percentage")
-    chaos_fail_pct = get_stat(chaos_df, "group4Percentage")
-    result["baseline_failure_rate_pct"] = baseline_fail_pct
-    result["chaos_failure_rate_pct"] = chaos_fail_pct
-    if baseline_fail_pct is not None and chaos_fail_pct is not None:
-        result["failure_rate_increase_pct"] = chaos_fail_pct - baseline_fail_pct
+    result["baseline_p95"] = (get_stat(baseline_df, "percentiles3") or 0) / 1000
+    result["chaos_p95"]    = (get_stat(chaos_df,    "percentiles3") or 0) / 1000
+    result["baseline_p99"] = (get_stat(baseline_df, "percentiles4") or 0) / 1000
+    result["chaos_p99"]    = (get_stat(chaos_df,    "percentiles4") or 0) / 1000
+    result["baseline_max"] = (get_stat(baseline_df, "maxResponseTime") or 0) / 1000
+    result["chaos_max"]    = (get_stat(chaos_df,    "maxResponseTime") or 0) / 1000
 
-    # Response time impact
-    result["baseline_p95_s"] = (get_stat(baseline_df, "percentiles3") or 0) / 1000
-    result["chaos_p95_s"] = (get_stat(chaos_df, "percentiles3") or 0) / 1000
-    result["baseline_p99_s"] = (get_stat(baseline_df, "percentiles4") or 0) / 1000
-    result["chaos_p99_s"] = (get_stat(chaos_df, "percentiles4") or 0) / 1000
+    result["p95_increase"] = result["chaos_p95"] - result["baseline_p95"]
+    result["p99_increase"] = result["chaos_p99"] - result["baseline_p99"]
+    result["max_increase"] = result["chaos_max"] - result["baseline_max"]
 
     return result
+
+
+def load_consistency(filepath: str) -> dict | None:
+    if not filepath or not Path(filepath).exists():
+        return None
+    with open(filepath) as f:
+        return json.load(f)
 
 
 # ── Visualization ─────────────────────────────────────────────────────────────
 
-def plot_mttr(baseline_df, chaos_dfs, chaos_labels, kill_time_s, mttr_results,
-              output_path):
-    """Plot KO rate over time for all runs with MTTR annotation."""
-    fig, ax = plt.subplots(figsize=(12, 5))
+def plot_failure_rate(labels, impacts, baseline_label, output_path):
+    """Bar chart showing failure rate increase for each chaos run."""
+    n = len(labels)
+    fig, ax = plt.subplots(figsize=(7, 5))
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(PANEL)
-    ax.set_title("KO Response Rate Over Time — MTTR Analysis",
-                 color=TEXT, fontsize=12, fontweight="bold", pad=8)
+    ax.set_title("Failure Rate Increase vs Baseline (%)", color=TEXT,
+                 fontsize=11, fontweight="semibold", pad=8)
     ax.tick_params(colors=TEXT, labelsize=8)
     for spine in ax.spines.values():
         spine.set_edgecolor(GRID)
-    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.6)
+    ax.grid(True, color=GRID, linestyle="--", linewidth=0.5, alpha=0.8, axis="y")
 
-    # Plot baseline KO rate
-    b_ko = get_timeseries(baseline_df, "responses", "ko")
-    b_all = get_timeseries(baseline_df, "responses", "all")
-    if not b_ko.empty and not b_all.empty:
-        t0 = b_ko["_time"].min()
-        b_ko["elapsed"] = (b_ko["_time"] - t0).dt.total_seconds()
-        b_all_t = b_all.copy()
-        b_all_t["elapsed"] = (b_all_t["_time"] - t0).dt.total_seconds()
-        merged_b = pd.merge_asof(
-            b_ko.sort_values("elapsed")[["elapsed", "_value"]].rename(columns={"_value": "ko"}),
-            b_all_t.sort_values("elapsed")[["elapsed", "_value"]].rename(columns={"_value": "all"}),
-            on="elapsed", direction="nearest", tolerance=5
-        ).dropna()
-        merged_b["ko_rate_pct"] = (merged_b["ko"] / merged_b["all"].replace(0, np.nan)) * 100
-        ax.plot(merged_b["elapsed"], merged_b["ko_rate_pct"],
-                color=COLOR_BASELINE, linewidth=1.5, linestyle="--",
-                label="Baseline", alpha=0.7)
+    vals = [imp.get("failure_rate_increase", 0) for imp in impacts]
+    bars = ax.bar(range(n), vals,
+                  color=COLORS[:n], alpha=0.85, edgecolor="#000000", linewidth=0.5)
 
-    # Plot chaos runs
-    for i, (chaos_df, label, mttr) in enumerate(
-            zip(chaos_dfs, chaos_labels, mttr_results)):
-        c_ko = get_timeseries(chaos_df, "responses", "ko")
-        c_all = get_timeseries(chaos_df, "responses", "all")
-        if c_ko.empty or c_all.empty:
-            continue
-        t0 = c_ko["_time"].min()
-        c_ko["elapsed"] = (c_ko["_time"] - t0).dt.total_seconds()
-        c_all_t = c_all.copy()
-        c_all_t["elapsed"] = (c_all_t["_time"] - t0).dt.total_seconds()
-        merged_c = pd.merge_asof(
-            c_ko.sort_values("elapsed")[["elapsed", "_value"]].rename(columns={"_value": "ko"}),
-            c_all_t.sort_values("elapsed")[["elapsed", "_value"]].rename(columns={"_value": "all"}),
-            on="elapsed", direction="nearest", tolerance=5
-        ).dropna()
-        merged_c["ko_rate_pct"] = (merged_c["ko"] / merged_c["all"].replace(0, np.nan)) * 100
+    # Value labels on bars
+    for bar, val in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.05,
+                f"+{val:.1f}%", ha="center", va="bottom", fontsize=9, color=TEXT)
 
-        color = COLOR_CHAOS[i % len(COLOR_CHAOS)]
-        ax.plot(merged_c["elapsed"], merged_c["ko_rate_pct"],
-                color=color, linewidth=2, label=label)
+    ax.set_xticks(range(n))
+    ax.set_xticklabels([l.replace(" (", "\n(") for l in labels], color=TEXT, fontsize=8)
+    ax.set_ylabel("Failure Rate Increase (%)", color=TEXT, fontsize=9)
+    ax.axhline(y=0, color="black", linewidth=0.8)
 
-        # MTTR annotation
-        if mttr["mttr_s"] is not None:
-            ax.axvline(x=kill_time_s, color="white", linewidth=1,
-                       linestyle=":", alpha=0.6)
-            ax.axvline(x=mttr["recovery_time_s"], color=color,
-                       linewidth=1, linestyle=":", alpha=0.6)
-            ax.annotate(
-                f"MTTR: {mttr['mttr_s']:.0f}s",
-                xy=(mttr["recovery_time_s"], mttr["peak_ko_rate"] * 50),
-                color=color, fontsize=8,
-                xytext=(10, 0), textcoords="offset points"
-            )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor=BG)
+    print(f"  Saved: {output_path}")
+    plt.close()
 
-    # Kill time line
-    ax.axvline(x=kill_time_s, color="white", linewidth=1.5,
-               linestyle="--", alpha=0.8, label=f"Pod killed (t={kill_time_s}s)")
 
-    ax.set_xlabel("Time (seconds from experiment start)", color=TEXT, fontsize=9)
-    ax.set_ylabel("KO Response Rate (%)", color=TEXT, fontsize=9)
+def plot_response_time_comparison(labels, impacts, baseline_label, output_path):
+    """Grouped bar chart: P95, P99, Max for baseline vs each chaos run."""
+    categories = ["P95", "P99", "Max"]
+    n_groups = 1 + len(impacts)  # baseline + each chaos run
+    all_labels = [baseline_label] + labels
+    x = np.arange(len(categories))
+    width = 0.8 / n_groups
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(PANEL)
+    ax.set_title("Response Time: Baseline vs Chaos Runs", color=TEXT, fontsize=11, fontweight="bold")
+    ax.tick_params(colors=TEXT, labelsize=8)
+    for spine in ax.spines.values():
+        spine.set_edgecolor(GRID)
+    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.5, axis="y")
+
+    baseline_vals = [
+        impacts[0]["baseline_p95"],
+        impacts[0]["baseline_p99"],
+        impacts[0]["baseline_max"],
+    ] if impacts else [0, 0, 0]
+
+    colors_rt = ["#4CAF50"] + COLORS[:len(impacts)]
+
+    # Baseline bars
+    ax.bar(x + 0 * width, baseline_vals, width,
+           label=baseline_label, color="#4CAF50", alpha=0.85)
+
+    # Chaos bars
+    for i, (label, imp) in enumerate(zip(labels, impacts)):
+        vals = [imp["chaos_p95"], imp["chaos_p99"], imp["chaos_max"]]
+        ax.bar(x + (i + 1) * width, vals, width,
+               label=label, color=COLORS[i % len(COLORS)], alpha=0.85)
+
+    ax.set_xticks(x + width * (n_groups - 1) / 2)
+    ax.set_xticklabels(categories, color=TEXT, fontsize=9)
+    ax.set_ylabel("seconds", color=TEXT, fontsize=9)
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
 
     plt.tight_layout()
@@ -327,82 +234,92 @@ def plot_mttr(baseline_df, chaos_dfs, chaos_labels, kill_time_s, mttr_results,
     plt.close()
 
 
-def print_report(kill_time_s, mttr_results, impact_results, chaos_labels,
-                 consistency_files=None):
-    """Print a comprehensive resilience metrics report."""
+# ── Summary Table ─────────────────────────────────────────────────────────────
 
-    print("\n" + "=" * 70)
-    print("RESILIENCE METRICS REPORT")
-    print("=" * 70)
-    print(f"Failure injected at: t = {kill_time_s}s\n")
+def print_report(labels, impacts, baseline_label, consistency_files=None):
+    print("\n" + "=" * 75)
+    print("RESILIENCE IMPACT REPORT")
+    print("=" * 75)
+    col_w = 22
 
-    for label, mttr, impact in zip(chaos_labels, mttr_results, impact_results):
-        print(f"─── {label} ─────────────────────────────────")
+    header = f"{'Metric':<32}" + "".join(f"{l[:col_w-2]:<{col_w}}" for l in labels)
+    print(header)
+    print("-" * 75)
 
-        # MTTR
-        print("\n  RECOVERY (MTTR)")
-        if mttr["mttr_s"] is not None:
-            print(f"    Time to recovery:      {mttr['mttr_s']:.0f}s")
-            print(f"    Recovery timestamp:    t = {mttr['recovery_time_s']:.0f}s")
-        else:
-            print(f"    Time to recovery:      No recovery detected within experiment")
-        if mttr["baseline_ko_rate"] is not None:
-            print(f"    Baseline KO rate:      {mttr['baseline_ko_rate']*100:.1f}%")
-        if mttr["peak_ko_rate"] is not None:
-            print(f"    Peak KO rate:          {mttr['peak_ko_rate']*100:.1f}%")
+    def fmt(val, div=1, unit="", sign=False):
+        if val is None:
+            return "N/A"
+        v = val / div
+        prefix = "+" if sign and v > 0 else ""
+        return f"{prefix}{v:.1f}{unit}"
 
-        # Impact
-        print("\n  IMPACT (during experiment)")
-        if impact.get("baseline_failure_rate_pct") is not None:
-            print(f"    Baseline failure rate: {impact['baseline_failure_rate_pct']:.1f}%")
-        if impact.get("chaos_failure_rate_pct") is not None:
-            print(f"    Chaos failure rate:    {impact['chaos_failure_rate_pct']:.1f}%")
-        if impact.get("failure_rate_increase_pct") is not None:
-            print(f"    Failure rate increase: +{impact['failure_rate_increase_pct']:.1f}%")
-        if impact.get("additional_failures") is not None:
-            print(f"    Additional failures:   {impact['additional_failures']:.0f} requests")
-        print(f"    Baseline P95:          {impact.get('baseline_p95_s', 0):.2f}s")
-        print(f"    Chaos P95:             {impact.get('chaos_p95_s', 0):.2f}s")
-        print(f"    Baseline P99:          {impact.get('baseline_p99_s', 0):.2f}s")
-        print(f"    Chaos P99:             {impact.get('chaos_p99_s', 0):.2f}s")
-        print()
+    rows = [
+        ("Baseline Failure Rate",     "baseline_failure_pct",  1,    "%",  False),
+        ("Chaos Failure Rate",         "chaos_failure_pct",     1,    "%",  False),
+        ("Failure Rate Increase",      "failure_rate_increase", 1,    "%",  True),
+        ("Additional KO Requests",     "additional_failures",   1,    "",   True),
+        ("Baseline P95",               "baseline_p95",          1,    "s",  False),
+        ("Chaos P95",                  "chaos_p95",             1,    "s",  False),
+        ("P95 Increase",               "p95_increase",          1,    "s",  True),
+        ("Baseline P99",               "baseline_p99",          1,    "s",  False),
+        ("Chaos P99",                  "chaos_p99",             1,    "s",  False),
+        ("P99 Increase",               "p99_increase",          1,    "s",  True),
+        ("Max Response Time (chaos)",  "chaos_max",             1,    "s",  False),
+        ("Max Increase",               "max_increase",          1,    "s",  True),
+    ]
 
-    # Consistency (if provided)
+    for label, key, div, unit, sign in rows:
+        row = f"{label:<32}"
+        for imp in impacts:
+            row += f"{fmt(imp.get(key), div, unit, sign):<{col_w}}"
+        print(row)
+
+    # Data consistency
     if consistency_files:
-        print("─── DATA CONSISTENCY ─────────────────────────────────")
-        for label, cf in zip(["Baseline"] + chaos_labels, consistency_files):
-            if cf and Path(cf).exists():
-                with open(cf) as f:
-                    data = json.load(f)
-                before = data.get("before", {}).get("inventoryCount", "N/A")
-                after = data.get("after", {}).get("inventoryCount", "N/A")
-                consumed = (before - after) if isinstance(before, int) and isinstance(after, int) else "N/A"
-                print(f"  {label}: {consumed} items consumed ({before} → {after})")
+        print()
+        print(f"{'DATA CONSISTENCY (orders placed)':<32}", end="")
+        all_files = consistency_files
+        labels_with_baseline = [baseline_label] + labels
 
-    print("\n" + "=" * 70 + "\n")
+        baseline_cons = load_consistency(all_files[0]) if all_files else None
+        baseline_orders = None
+        if baseline_cons:
+            b = baseline_cons.get("before", {}).get("inventoryCount", 0)
+            a = baseline_cons.get("after", {}).get("inventoryCount", 0)
+            baseline_orders = b - a
+            print(f"Baseline: {baseline_orders} orders", end="  ")
+
+        print()
+        row = f"{'Orders placed (chaos runs)':<32}"
+        for i, cf in enumerate(all_files[1:]):
+            cons = load_consistency(cf)
+            if cons:
+                b = cons.get("before", {}).get("inventoryCount", 0)
+                a = cons.get("after", {}).get("inventoryCount", 0)
+                orders = b - a
+                pct = ((orders - baseline_orders) / baseline_orders * 100) if baseline_orders else 0
+                sign = "+" if pct >= 0 else ""
+                row += f"{orders} ({sign}{pct:.1f}%){'':<{col_w - len(str(orders)) - 10}}"
+            else:
+                row += f"{'N/A':<{col_w}}"
+        print(row)
+
+    print("=" * 75 + "\n")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Calculate MTTR and resilience metrics from InfluxDB CSV exports.")
-    parser.add_argument("--baseline", required=True,
-                        help="Path to baseline results.csv")
-    parser.add_argument("--chaos", nargs="+", required=True,
-                        help="Path(s) to chaos experiment results.csv")
-    parser.add_argument("--labels", nargs="+",
-                        help="Labels for each chaos run")
-    parser.add_argument("--kill-time", type=float, default=120.0,
-                        help="Seconds from experiment start when pod was killed (default: 120)")
-    parser.add_argument("--recovery-threshold", type=float, default=0.10,
-                        help="KO rate delta above baseline to consider recovered (default: 0.10 = 10%%)")
-    parser.add_argument("--output", default="mttr_analysis.png",
-                        help="Output filename for MTTR plot")
-    parser.add_argument("--output-dir", default=".",
-                        help="Output directory")
+        description="Calculate resilience impact metrics from InfluxDB CSV exports.")
+    parser.add_argument("--baseline", required=True)
+    parser.add_argument("--chaos", nargs="+", required=True)
+    parser.add_argument("--labels", nargs="+")
+    parser.add_argument("--baseline-label", default="Baseline")
+    parser.add_argument("--output", default="impact.png")
+    parser.add_argument("--output-dir", default=".")
     parser.add_argument("--consistency", nargs="+",
-                        help="Path(s) to consistency.json files (baseline first, then chaos)")
+                        help="consistency.json files: baseline first, then chaos runs")
     args = parser.parse_args()
 
     labels = args.labels if args.labels else [f"Chaos Run {i+1}" for i in range(len(args.chaos))]
@@ -417,31 +334,23 @@ def main():
 
     chaos_dfs = []
     for path, label in zip(args.chaos, labels):
-        print(f"Loading chaos run: {label} — {path}")
+        if not Path(path).exists():
+            print(f"ERROR: File not found: {path}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Loading: {label} — {path}")
         chaos_dfs.append(parse_csv(path))
 
-    # Calculate metrics
-    mttr_results = []
-    impact_results = []
-    for chaos_df, label in zip(chaos_dfs, labels):
-        print(f"\nCalculating metrics for: {label}")
-        mttr = calculate_mttr(chaos_df, baseline_df, args.kill_time,
-                              args.recovery_threshold)
-        impact = calculate_impact(chaos_df, baseline_df, args.kill_time,
-                                  mttr.get("recovery_time_s"))
-        mttr_results.append(mttr)
-        impact_results.append(impact)
+    impacts = [calculate_impact(cdf, baseline_df) for cdf in chaos_dfs]
 
-    # Print report
-    print_report(args.kill_time, mttr_results, impact_results, labels,
-                 args.consistency)
+    print_report(labels, impacts, args.baseline_label, args.consistency)
 
-    # Plot
-    out = Path(args.output_dir) / args.output
-    print("Generating MTTR plot...")
-    plot_mttr(baseline_df, chaos_dfs, labels, args.kill_time,
-              mttr_results, str(out))
-
+    out = Path(args.output_dir) / Path(args.output).stem
+    print("Generating failure rate chart...")
+    plot_failure_rate(labels, impacts, args.baseline_label,
+                      str(out) + "_failure_rate.png")
+    print("Generating response time chart...")
+    plot_response_time_comparison(labels, impacts, args.baseline_label,
+                                  str(out) + "_response_times.png")
     print("Done!")
 
 

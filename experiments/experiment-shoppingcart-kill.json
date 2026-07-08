@@ -1,15 +1,15 @@
 {
   "experiments": [
     {
-      "testName": "API Chain - Kill Order Service",
-      "description": "Kill misarch-order pod. Hypothesis: 100% order creation failure.",
+      "testName": "API Chain - Kill Shoppingcart Service",
+      "description": "Kill misarch-shoppingcart pod. Hypothesis: 100% cart and order creation failure.",
       "gatlingConfig": [
         {
           "loadScript": "gatling/buyProcessScenario.kt",
           "userSteps": "gatling/realistic10-600s.csv"
         }
       ],
-      "chaosConfig": "chaos/order-kill.json",
+      "chaosConfig": "chaos/shoppingcart-kill.json",
       "misarchConfig": "misarch/none.json",
       "globalConfig": "global/warmup10-60s.json"
     }
