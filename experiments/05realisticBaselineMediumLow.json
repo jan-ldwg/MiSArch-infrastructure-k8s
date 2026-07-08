@@ -6,7 +6,7 @@
       "gatlingConfig": [
         {
           "loadScript": "gatling/realisticBuyProcess.kt",
-          "userSteps": "gatling/realistic75-600s.csv"
+          "userSteps": "gatling/realistic35-600s.csv"
         }
       ],
       "chaosConfig": "chaos/none.json",
