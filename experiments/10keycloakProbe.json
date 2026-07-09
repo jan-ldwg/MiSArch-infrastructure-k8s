@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Kill Keycloak",
+      "description": "Silently kills one instance of Keycloak two minutes after experiment start",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/keycloak-failure.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup50-60s.json"
+    }
+  ]
+}
