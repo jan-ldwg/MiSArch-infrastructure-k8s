@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Baseline with realistic load script",
+      "description": "This test uses defaults the improved load script and low load.",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/inventory-500-30pct.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}
