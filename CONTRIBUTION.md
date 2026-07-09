@@ -38,9 +38,43 @@
 - Static code analysis
 - Static project architecture analysis
 - Local deployability of services for testing
-- Fix dapr error message storm during failure
-- Added Probes:
-  - startup
-  - readiness
-  - liveness
-- Jaeger UI service for analyzing stack traces from otel
+- Designed experiment plans and infrastructure improvements
+- Run baseline experiments with different loads to test infrastructure limits
+- Dapr improvements:
+  - Fix Dapr error message storm during failure
+  - Ran Dapr resilience experiments:
+    - Circuit breaker experiment (determined unnecessary)
+    - Retry with backoff (3 retries) which eliminated short-term failures
+- Infrastructure:
+  - Added Probes:
+    - startup
+    - readiness
+    - liveness
+  - Replaced mongosh probes with TCP probes
+  - Added readiness and liveness probes to Redis master
+  - Added Jaeger collector and UI connected to OpenTelemetry, excluding heartbeat traces
+  - Fixed missing payment, shipment & simulation services
+- Experiment runner improvements:
+  - Added InfluxDB export Python script
+  - Added Git status to experiment result export
+  - Added runtime information to experiment runner
+  - Improved visualization of experiment results using stacked bar charts
+- Invoice service improvements:
+  - Improved observability with configurable, per-step error logging
+  - Fixed serialization bugs (field names, enum casing, camelCase conversion, Dapr route alignment)
+  - Persisted full vendor address on upsert
+- Catalog service improvements:
+  - Improved observability with optional debug logging
+  - Added R2DBC connection pooling
+  - Added database indexes via migrations
+- Discount service improvements:
+  - Improved observability with optional debug logging
+  - Added R2DBC connection pooling and fixed N+1 queries
+  - Added database indexes on foreign keys and date filters
+  - Ran load test after improvements, reducing mean query time from multiple seconds to sub one second
+- Order service improvements:
+  - Improved tracing instrumentation and logging
+  - Fixed dependency version mismatch
+  - Switched to a single reusable HTTP client
+- Testdata seeding improvements:
+  - Added vendor address seeding needed for invoice service
