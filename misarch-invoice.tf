@@ -25,7 +25,7 @@ resource "kubernetes_deployment" "misarch_invoice" {
       spec {
 
         container {
-          image             = "ghcr.io/misarch/invoice:${var.MISARCH_INVOICE_VERSION}"
+          image             = "${var.MISARCH_INVOICE_VERSION}"
           image_pull_policy = "Always"
 
           name = local.misarch_invoice_service_name

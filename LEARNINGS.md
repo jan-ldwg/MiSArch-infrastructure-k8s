@@ -230,6 +230,12 @@ Get logs from a pod:
 kubectl logs <POD_NAME> -n misarch
 ```
 
+Restart a deployment to pull the latest image:
+
+```sh
+kubectl rollout restart deployment/misarch-<service> -n misarch
+```
+
 ## ToDos
 
 - Image service is broken

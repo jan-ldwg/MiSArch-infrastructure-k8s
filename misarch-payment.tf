@@ -1,3 +1,19 @@
+resource "kubernetes_service" "misarch_payment" {
+  metadata {
+    name      = local.misarch_payment_service_name
+    namespace = local.namespace
+    labels    = merge(local.base_misarch_labels, local.misarch_payment_specific_labels)
+  }
+
+  spec {
+    selector = { app = local.misarch_payment_service_name }
+    port {
+      port        = 8080
+      target_port = 8080
+    }
+  }
+}
+
 resource "kubernetes_deployment" "misarch_payment" {
   depends_on = [helm_release.misarch_payment_db, terraform_data.dapr]
   metadata {

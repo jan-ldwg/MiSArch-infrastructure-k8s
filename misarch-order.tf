@@ -25,7 +25,7 @@ resource "kubernetes_deployment" "misarch_order" {
       spec {
 
         container {
-          image             = "ghcr.io/misarch/order:${var.MISARCH_ORDER_VERSION}"
+          image             = "${var.MISARCH_ORDER_VERSION}"
           image_pull_policy = "Always"
 
           name = local.misarch_order_service_name
@@ -33,12 +33,12 @@ resource "kubernetes_deployment" "misarch_order" {
 
           resources {
             limits = {
-              cpu    = "500m"
-              memory = "1200Mi"
+              cpu    = "2000m"
+              memory = "2Gi"
             }
             requests = {
-              cpu    = "100m"
-              memory = "400Mi"
+              cpu    = "500m"
+              memory = "800Mi"
             }
           }
 

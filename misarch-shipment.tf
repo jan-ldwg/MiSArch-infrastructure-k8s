@@ -1,3 +1,19 @@
+resource "kubernetes_service" "misarch_shipment" {
+  metadata {
+    name      = local.misarch_shipment_service_name
+    namespace = local.namespace
+    labels    = merge(local.base_misarch_labels, local.misarch_shipment_specific_labels)
+  }
+
+  spec {
+    selector = { app = local.misarch_shipment_service_name }
+    port {
+      port        = 8080
+      target_port = 8080
+    }
+  }
+}
+
 resource "kubernetes_deployment" "misarch_shipment" {
   depends_on = [helm_release.misarch_shipment_db, helm_release.dapr]
   metadata {

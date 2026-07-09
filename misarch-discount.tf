@@ -25,7 +25,7 @@ resource "kubernetes_deployment" "misarch_discount" {
       spec {
 
         container {
-          image             = "ghcr.io/misarch/discount:${var.MISARCH_DISCOUNT_VERSION}"
+          image             = "${var.MISARCH_DISCOUNT_VERSION}"
           image_pull_policy = "Always"
 
           name = local.misarch_discount_service_name

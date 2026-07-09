@@ -46,12 +46,12 @@ variable "MISARCH_ADDRESS_VERSION" {
 
 variable "MISARCH_CATALOG_VERSION" {
   type    = string
-  default = "main@sha256:df9572d60c8049fe032d5868fe6028006e585a1ae8625b860a353898f0f82f69"
+  default = "ghcr.io/frankakn7/misarch-catalog:main"
 }
 
 variable "MISARCH_DISCOUNT_VERSION" {
   type    = string
-  default = "main@sha256:0186c5c1618c75432db560a71042d5e9a99f7d4697cff2619585222fc2b446b9"
+  default = "ghcr.io/frankakn7/misarch-discount:main"
 }
 
 variable "MISARCH_FRONTEND_VERSION" {
@@ -71,7 +71,7 @@ variable "MISARCH_INVENTORY_VERSION" {
 
 variable "MISARCH_INVOICE_VERSION" {
   type    = string
-  default = "main@sha256:d6b3b006f4cae18cafdb2b1949fb22067b4ce24df8944b96734f9c91f42a3c45"
+  default = "ghcr.io/frankakn7/misarch-invoice:main"
 }
 
 variable "MISARCH_MEDIA_VERSION" {
@@ -86,7 +86,7 @@ variable "MISARCH_NOTIFICATION_VERSION" {
 
 variable "MISARCH_ORDER_VERSION" {
   type    = string
-  default = "main@sha256:9029c69089a58f5fd0cf147bd3c44ec51082a47ed6af7a65ee482da79cad81ac"
+  default = "ghcr.io/frankakn7/misarch-order:main"
 }
 
 variable "MISARCH_PAYMENT_VERSION" {
@@ -181,5 +181,5 @@ variable "MISARCH_CHAOSTOOLKIT_EXECUTOR_VERSION" {
 
 variable "MISARCH_TESTDATA_VERSION" {
   type    = string
-  default = "ghcr.io/jan-ldwg/testdata:latest"
+  default = "ghcr.io/frankakn7/misarch-testdata:main"
 }

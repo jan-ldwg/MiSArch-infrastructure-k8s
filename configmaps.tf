@@ -146,7 +146,14 @@ resource "kubernetes_config_map" "misarch_catalog_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.catalog_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_catalog_db_password.result
+    "SPRING_R2DBC_POOL_INITIAL_SIZE"                               = "10"
+    "SPRING_R2DBC_POOL_MAX_SIZE"                                   = "60"
+    "SPRING_R2DBC_POOL_MAX_IDLE_TIME"                              = "30m"
+    "SPRING_R2DBC_POOL_MAX_LIFE_TIME"                              = "60m"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
+    # "CATALOG_LOG_LEVEL"        = "INFO"
+    # "R2DBC_POOL_LOG_LEVEL"     = "WARN"
+    # "R2DBC_POSTGRES_LOG_LEVEL" = "WARN"
   }
 }
 
@@ -174,6 +181,13 @@ resource "kubernetes_config_map" "misarch_discount_env_vars" {
     "SPRING_FLYWAY_URL"                                            = "jdbc:postgresql://${local.discount_db_url}/${var.MISARCH_DB_DATABASE}"
     "SPRING_R2DBC_USERNAME"                                        = var.MISARCH_DB_USER
     "SPRING_R2DBC_PASSWORD"                                        = random_password.misarch_discount_db_password.result
+    "SPRING_R2DBC_POOL_INITIAL_SIZE"                               = "2"
+    "SPRING_R2DBC_POOL_MAX_SIZE"                                   = "10"
+    "SPRING_R2DBC_POOL_MAX_IDLE_TIME"                              = "30m"
+    "SPRING_R2DBC_POOL_MAX_LIFE_TIME"                              = "60m"
+    "DISCOUNT_LOG_LEVEL"                                           = "WARN"
+    "R2DBC_POOL_LOG_LEVEL"                                         = "WARN"
+    "R2DBC_POSTGRES_LOG_LEVEL"                                     = "WARN"
     "OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY" = true
   }
 }
@@ -289,6 +303,7 @@ resource "kubernetes_config_map" "misarch_invoice_env_vars" {
   data = {
     "ME_CONFIG_MONGODB_URL" = "mongodb://${local.invoice_db_url}"
     "MONGODB_URI"           = "mongodb://${local.invoice_db_url}"
+    "RUST_LOG"              = "warn"
   }
 }
 
