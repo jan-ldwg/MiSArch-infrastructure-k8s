@@ -21,7 +21,7 @@ variable "KEYCLOAK_ADMIN_PASSWORD" {
 
 variable "MISARCH_KEYCLOAK_VERSION" {
   type    = string
-  default = "main@sha256:25af90b2b6ff10ed6087257d4c21643b3be048898080de3f60aadce9d935d462"
+  default = "ghcr.io/jan-ldwg/keycloak:latest"
 }
 
 variable "KEYCLOAK_USER_EVENTS_PLUGIN_VERSION" {

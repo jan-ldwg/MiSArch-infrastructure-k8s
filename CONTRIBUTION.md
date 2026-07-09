@@ -28,6 +28,7 @@
 - debugged jaeger deployment
 - added tracing to order service
 - run initial experiments with different work scripts and load levels
+- changed keycloak image to enable proper probes and optimized build for faster startup
 
 ## Maryam
 

@@ -45,7 +45,7 @@ resource "kubernetes_deployment" "keycloak" {
       spec {
 
         container {
-          image             = "ghcr.io/misarch/keycloak:${var.MISARCH_KEYCLOAK_VERSION}"
+          image             = var.MISARCH_KEYCLOAK_VERSION
           image_pull_policy = "Always"
 
           name = local.keycloak_service_name
@@ -61,15 +61,34 @@ resource "kubernetes_deployment" "keycloak" {
             }
           }
 
-          readiness_probe {
-            tcp_socket {
+          startup_probe {
+            http_get {
+              path = "/keycloak/health/started"
               port = 8080
             }
-            initial_delay_seconds = 60
-            period_seconds        = 10
-            failure_threshold     = 10
-            success_threshold     = 1
-            timeout_seconds       = 5
+            period_seconds    = 5
+            timeout_seconds   = 3
+            failure_threshold = 60
+          }
+
+          readiness_probe {
+            http_get {
+              path = "/keycloak/health/ready"
+              port = 8080
+            }
+            period_seconds    = 5
+            timeout_seconds   = 3
+            failure_threshold = 3
+          }
+
+          liveness_probe {
+            http_get {
+              path = "/keycloak/health/live"
+              port = 8080
+            }
+            period_seconds    = 10
+            timeout_seconds   = 3
+            failure_threshold = 3
           }
 
           env_from {

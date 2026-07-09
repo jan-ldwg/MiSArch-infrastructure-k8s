@@ -7,7 +7,8 @@
 - https://github.com/frankakn7/misarch-order
 - https://github.com/frankakn7/misarch-discount
 - https://github.com/frankakn7/misarch-testdata
-
+- https://github.com/jan-ldwg/keycloak-user-creation-events
+- https://github.com/jan-ldwg/keycloak
 
 ## Overview
 
@@ -17,25 +18,32 @@ Additional information on top can be found in the [documentation](https://misarc
 ## Deploying
 
 Initially, run
+
 ```sh
 terraform init
 ```
+
 once.
 
 Afterwards, you can set up the cluster using
+
 ```sh
 terraform apply
 ```
+
 repeatedly until the cluster is up.
 Prepare for a long journey, it may take up to 10 minutes.
 
 ## Accessing DB Passwords
 
 All generated DB passwords can be retrieved by calling
+
 ```sh
 terraform output misarch_${service_name_lowercased}_db_password
 ```
+
 so for example
+
 ```sh
 terraform output misarch_catalog_db_password
 # Or
@@ -46,6 +54,7 @@ terraform output misarch_shoppingcart_db_password
 
 If you want to have a build whose images are always kept up to date instead of fixed to one version, replace `terraform apply` with `terraform apply -var-file="latest-deployment.tfvars"`.\
 However, the images will only be updated once you execute
+
 ```sh
 kubectl -n misarch rollout restart deployment
 kubectl -n misarch rollout restart statefulset
@@ -123,9 +132,9 @@ It is not intended for productive use in the slightest.
 - **Schema Changes in Services**: If there are schema changes in individual services without changes in the gateway code, a restart of the gateway deployment is required.
 - **\<x\> exists already**: When canceling a previous `terraform apply` and re-running `terraform apply`, this error can occur. It means that `terraform` sees state outside of its control. In this case, you have two options: `terraform refresh` may help sometimes. If it does not help, delete the component and try again. In the worst case, execute `kubectl delete namespaces misarch` (or whatever you named your namespace) and try again. We know it's weird, but it seems to be caused by Terraforms design.
 - **failed to fetch resource from kubernetes: the server could not find the requested resource**: There are multiple causes for this error, you need to find out which one is applicable for you:
-    - Somehow, Dapr seems to have been broken causing its Custom Resource Definitions (CRD) to disappear. Solution: Comment out the entire `dapr` file, run `terraform apply` to remove it from the cluster, and uncomment it again, everything should be working again. Also make sure that Dapr configuration only runs once Dapr has been created. More information: https://github.com/gavinbunney/terraform-provider-kubectl/issues/270
-    - Dapr cannot be created successfully. Fix your Dapr configuration
-    - Randomly at the end of `terraform apply` but the custom resources have been created: This is the best and worst case at the same time: It means that subsequent `terraform apply`s will most likely succeed. There seems to be a random chance that this "error" occurs when creating the cluster, but it has no effect as everything will be created regardless. However, it remains unclear as to why this error happens in the first place. If it does not work, destroy and re-setup your cluster a few times (highest count needed so far: 4), until it works.
+  - Somehow, Dapr seems to have been broken causing its Custom Resource Definitions (CRD) to disappear. Solution: Comment out the entire `dapr` file, run `terraform apply` to remove it from the cluster, and uncomment it again, everything should be working again. Also make sure that Dapr configuration only runs once Dapr has been created. More information: https://github.com/gavinbunney/terraform-provider-kubectl/issues/270
+  - Dapr cannot be created successfully. Fix your Dapr configuration
+  - Randomly at the end of `terraform apply` but the custom resources have been created: This is the best and worst case at the same time: It means that subsequent `terraform apply`s will most likely succeed. There seems to be a random chance that this "error" occurs when creating the cluster, but it has no effect as everything will be created regardless. However, it remains unclear as to why this error happens in the first place. If it does not work, destroy and re-setup your cluster a few times (highest count needed so far: 4), until it works.
 - **Invalid value for "path" parameter: no file exists at "keycloak/keycloak-realm-template.json"**: You need to clone this repo using `git clone --recurse-submodules`
 - **Nothing to do, 0 Resources to apply change and destroy**: Please set `TF_VAR_KUBERNETES_CONFIG_PATH`, i.e. through executing `. test-script.sh`
 - Applying Dapr Configs leads to timeouts: Wait for Terraform to run into the timeout and then try again. We have no idea why sometimes the objects cannot be created successfully, but retrying again should fix it.
