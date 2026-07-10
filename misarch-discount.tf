@@ -51,6 +51,36 @@ resource "kubernetes_deployment" "misarch_discount" {
               name = local.misarch_discount_env_vars_configmap
             }
           }
+          startup_probe {
+            http_get {
+              path = "/health"
+              port = 8080
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 10
+            failure_threshold     = 18
+            timeout_seconds       = 5
+          }
+          readiness_probe {
+            http_get {
+              path = "/health"
+              port = 8080
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 5
+            failure_threshold     = 3
+            timeout_seconds       = 3
+          }
+          liveness_probe {
+            http_get {
+              path = "/health"
+              port = 8080
+            }
+            initial_delay_seconds = 30
+            period_seconds        = 10
+            failure_threshold     = 3
+            timeout_seconds       = 5
+          }
         }
 
         container {
