@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Combined failure: kill-order + freeze-discount + inventory-delay",
+      "description": "Kills order at t=120, delays inventory t=60-240, freezes discount at t=200.",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic35-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/combined-kill-freeze.json",
+      "misarchConfig": "misarch/inventory-500-30pct.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}
