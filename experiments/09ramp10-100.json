@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Ramp from 10 to 40 users",
+      "description": "This test uses defaults the improved load script. Starts with 60s of 10 users, ramps linearly for 60s and the rest at 40 users",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realisticRamp10-100-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup50-60s.json"
+    }
+  ]
+}

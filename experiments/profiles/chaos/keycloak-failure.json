@@ -1,0 +1,40 @@
+{
+  "title": "Keycloak failure",
+  "description": "Keycloak silently fails after 2 minutes",
+  "steady-state-hypothesis": {
+    "title": "Keycloak deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "Order pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": { "name": "keycloak", "ns": "misarch" }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Silently kill keycloak process",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "exec_in_pods",
+        "arguments": {
+          "ns": "misarch",
+          "label_selector": "app=keycloak",
+          "mode": "fixed",
+          "all": "false",
+          "qty": 1,
+          "cmd": ["sh", "-c", "kill -9 1"]
+        }
+      },
+      "pauses": { "before": 120 }
+    }
+  ]
+}
