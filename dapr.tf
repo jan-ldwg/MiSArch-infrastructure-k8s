@@ -131,8 +131,8 @@ resource "kubectl_manifest" "dapr_resiliency_inventory_retry" {
       retries:
         inventoryRetry:
           policy: exponential
-          initialInterval: 200ms
-          maxInterval: 800ms
+          initialInterval: 100ms
+          maxInterval: 400ms
           maxRetries: 3
     targets:
       apps:

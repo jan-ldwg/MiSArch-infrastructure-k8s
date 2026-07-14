@@ -56,9 +56,9 @@ resource "kubernetes_deployment" "misarch_discount" {
               path = "/health"
               port = 8080
             }
-            initial_delay_seconds = 5
+            initial_delay_seconds = 30
             period_seconds        = 10
-            failure_threshold     = 18
+            failure_threshold     = 20
             timeout_seconds       = 5
           }
           readiness_probe {
