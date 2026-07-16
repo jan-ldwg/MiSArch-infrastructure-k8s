@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Inventory delay + 500 error injection",
+      "description": "Inventory returns 500 with 5s delay on 100% of requests. Verifies slow-failure injection before adding resilience.",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic35-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/inventory-delay-500.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}

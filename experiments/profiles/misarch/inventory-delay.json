@@ -1,0 +1,19 @@
+[
+  {
+    "failures": [{
+      "name": "inventory",
+      "serviceInvocationDeterioration": [{
+        "path": "/", "delay": 5000, "delayProbability": 1.0,
+        "errorProbability": 0, "errorCode": 0
+      }]
+    }],
+    "pauses": { "before": 60, "after": 180 }
+  },
+  {
+    "failures": [{
+      "name": "inventory",
+      "serviceInvocationDeterioration": null
+    }],
+    "pauses": { "before": 0, "after": 0 }
+  }
+]
