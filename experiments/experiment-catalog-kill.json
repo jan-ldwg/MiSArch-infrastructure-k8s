@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "API Chain - Kill Catalog Service",
+      "description": "Kill misarch-catalog pod. Hypothesis: product browsing fails, existing cart orders still complete.",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/catalog-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}

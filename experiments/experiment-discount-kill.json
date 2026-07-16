@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Event Chain - Kill Discount Service",
+      "description": "Kill misarch-discount pod. Hypothesis: discount processing fails, orders may be inconsistent.",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/buyProcessScenario.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/discount-kill.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}

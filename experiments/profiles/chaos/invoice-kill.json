@@ -1,0 +1,44 @@
+{
+  "title": "Kill invoice",
+  "description": "Kills one pod of the misarch-invoice service after 2 minutes",
+  "steady-state-hypothesis": {
+    "title": "misarch-invoice deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "misarch-invoice pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": {
+            "name": "misarch-invoice",
+            "ns": "misarch"
+          }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill one misarch-invoice pod under load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-invoice",
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
+        }
+      },
+      "pauses": {
+        "before": 120
+      }
+    }
+  ]
+}
