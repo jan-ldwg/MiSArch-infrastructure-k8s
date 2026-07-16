@@ -1,0 +1,20 @@
+[
+  {
+    "failures": [{
+      "name": "inventory",
+      "serviceInvocationDeterioration": [{
+        "path": "/",
+        "errorProbability": 0.3,
+        "errorCode": 500
+      }]
+    }],
+    "pauses": { "before": 60, "after": 420 }
+  },
+  {
+    "failures": [{
+      "name": "inventory",
+      "serviceInvocationDeterioration": null
+    }],
+    "pauses": { "before": 0, "after": 0 }
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Final triple Combined Experiment",
+      "description": "Kills order pod, injects 30% inventory failures, freezes discount service",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic35-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/combined-kill-freeze.json",
+      "misarchConfig": "misarch/inventory-500-30pct.json",
+      "globalConfig": "global/warmup10-60s.json"
+    }
+  ]
+}
