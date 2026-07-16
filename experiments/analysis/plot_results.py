@@ -483,6 +483,7 @@ def main():
     parser.add_argument("--output", "-o", default="timeseries.png")
     parser.add_argument("--output-dir", default=".")
     parser.add_argument("--all", action="store_true", help="Generate all dashboards")
+    parser.add_argument("--text-only", action="store_true", help="Print summary table only, skip all graph generation")
     args = parser.parse_args()
 
     labels = args.labels if args.labels else [Path(f).stem for f in args.files]
@@ -504,21 +505,22 @@ def main():
 
     print_summary(data_list, labels)
 
-    out_dir = Path(args.output_dir)
-    stem = Path(args.output).stem
+    if not args.text_only:
+        out_dir = Path(args.output_dir)
+        stem = Path(args.output).stem
 
-    print("Generating time series dashboard...")
-    plot_timeseries(data_list, labels, out_dir / f"{stem}_timeseries.png")
+        print("Generating time series dashboard...")
+        plot_timeseries(data_list, labels, out_dir / f"{stem}_timeseries.png")
 
-    if args.all:
-        print("Generating response time summary...")
-        plot_response_times(data_list, labels, out_dir / f"{stem}_response_times.png")
+        if args.all:
+            print("Generating response time summary...")
+            plot_response_times(data_list, labels, out_dir / f"{stem}_response_times.png")
 
-        print("Generating request counts dashboard...")
-        plot_request_counts(data_list, labels, out_dir / f"{stem}_request_counts.png")
+            print("Generating request counts dashboard...")
+            plot_request_counts(data_list, labels, out_dir / f"{stem}_request_counts.png")
 
-        print("Generating percentile overview...")
-        plot_percentile_table(data_list, labels, out_dir / f"{stem}_percentiles.png")
+            print("Generating percentile overview...")
+            plot_percentile_table(data_list, labels, out_dir / f"{stem}_percentiles.png")
 
     print("\nDone!")
 
