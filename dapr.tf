@@ -118,6 +118,30 @@ resource "kubectl_manifest" "dapr_pubsub_config_experiment_config" {
   EOF
 }
 
+resource "kubectl_manifest" "dapr_resiliency_order_inventory_cb" {
+  depends_on = [helm_release.dapr]
+  yaml_body  = <<-EOF
+  apiVersion: dapr.io/v1alpha1
+  kind: Resiliency
+  metadata:
+    name: "order-inventory-cb"
+    namespace: ${local.namespace}
+  spec:
+    policies:
+      circuitBreakers:
+        inventoryCB:
+          maxRequests: 1
+          interval: 30s
+          timeout: 5s
+          trip: consecutiveFailures >= 3
+    targets:
+      apps:
+        order:
+          circuitBreaker:
+            inventory: inventoryCB
+  EOF
+}
+
 resource "kubectl_manifest" "dapr_config" {
   depends_on = [helm_release.dapr]
   yaml_body  = <<-EOF
@@ -141,5 +165,6 @@ resource "kubectl_manifest" "dapr_config" {
 // Pseudo resource so that all services can simply depend on this resource instead of the whole list ↓
 resource "terraform_data" "dapr" {
   depends_on = [helm_release.dapr, kubectl_manifest.dapr_config, kubectl_manifest.dapr_pubsub_config_experiment_config,
-    kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config]
+  kubectl_manifest.dapr_pubsub_config, kubectl_manifest.dapr_state_config,
+  kubectl_manifest.dapr_resiliency_order_inventory_cb]
 }
