@@ -35,16 +35,23 @@
 
 ## Maxim Strzebkowski
 
-- Static code analysis
-- Static project architecture analysis
-- Local deployability of services for testing
-- Designed experiment plans and infrastructure improvements
-- Run baseline experiments with different loads to test infrastructure limits
-- Dapr improvements:
-  - Fix Dapr error message storm during failure
+- General Work:
+  - Static code analysis
+  - Static project architecture analysis
+  - Local deployability of services for testing
+  - Designed experiment plans and infrastructure improvements
+  - Initial setup, structure and design of final presentation
+- Experiments:
+  - Run baseline experiments with different loads to test infrastructure limits
   - Ran Dapr resilience experiments:
     - Circuit breaker experiment (determined unnecessary)
     - Retry with backoff (3 retries) which eliminated short-term failures
+  - Ran startup, readiness, liveness probe experiments
+  - Ran HPA experiments
+  - Ran redundancy replica experiments
+  - Ran final triple combined experiment
+- Dapr improvements:
+  - Fix Dapr error message storm during failure
 - Infrastructure:
   - Added Probes:
     - startup
@@ -52,6 +59,7 @@
     - liveness
   - Replaced mongosh probes with TCP probes
   - Added readiness and liveness probes to Redis master
+  - Fixed redis master OOM kill
   - Added Jaeger collector and UI connected to OpenTelemetry, excluding heartbeat traces
   - Fixed missing payment, shipment & simulation services
 - Experiment runner improvements:
