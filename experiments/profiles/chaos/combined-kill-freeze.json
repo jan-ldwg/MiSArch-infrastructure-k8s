@@ -1,0 +1,41 @@
+{
+  "title": "__TITLE__",
+  "description": "__DESCRIPTION__",
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill order pods under load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app=misarch-order",
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
+        }
+      },
+      "pauses": { "before": 100 }
+    },
+    {
+      "type": "action",
+      "name": "Freeze discount Java process with SIGSTOP",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "exec_in_pods",
+        "arguments": {
+          "cmd": ["sh", "-c", "echo '=== FREEZING DISCOUNT JVM ===' && kill -STOP $(pgrep java)"],
+          "label_selector": "app=misarch-discount",
+          "container_name": "misarch-discount",
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1
+        }
+      },
+      "pauses": { "before": 80 }
+    }
+  ]
+}

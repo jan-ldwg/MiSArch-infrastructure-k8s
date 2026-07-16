@@ -6,10 +6,10 @@
       "gatlingConfig": [
         {
           "loadScript": "gatling/realisticBuyProcess.kt",
-          "userSteps": "gatling/realistic75-600s.csv"
+          "userSteps": "gatling/realistic35-600s.csv"
         }
       ],
-      "chaosConfig": "chaos/none.json",
+      "chaosConfig": "chaos/freeze-discount.json",
       "misarchConfig": "misarch/none.json",
       "globalConfig": "global/warmup10-60s.json"
     }
