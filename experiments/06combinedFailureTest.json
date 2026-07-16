@@ -1,8 +1,8 @@
 {
   "experiments": [
     {
-      "testName": "Combined failure: kill-order + freeze-discount + inventory-delay",
-      "description": "Kills order at t=120, delays inventory t=60-240, freezes discount at t=200.",
+      "testName": "Final triple Combined Experiment",
+      "description": "Kills order pod, injects 30% inventory failures, freezes discount service",
       "gatlingConfig": [
         {
           "loadScript": "gatling/realisticBuyProcess.kt",
