@@ -99,18 +99,20 @@ def parse_influxdb_csv(filepath: str) -> dict:
 
     blocks = content.strip().split("\n\n")
     all_dfs = []
+    pending_header_lines = None
+    pending_data_rows = []
 
-    for block in blocks:
-        lines = block.strip().split("\n")
-        header_idx = None
-        for j, line in enumerate(lines):
-            if "_time" in line and "_value" in line:
-                header_idx = j
-                break
-        if header_idx is None:
-            continue
+    def _flush():
+        nonlocal pending_header_lines, pending_data_rows
+        if pending_header_lines is None:
+            return
+        all_lines = pending_header_lines + pending_data_rows
+        if len(all_lines) <= 1:
+            pending_header_lines = None
+            pending_data_rows = []
+            return
         try:
-            df = pd.read_csv(io.StringIO("\n".join(lines[header_idx:])))
+            df = pd.read_csv(io.StringIO("\n".join(all_lines)))
             df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
             df = df.dropna(subset=["_time", "_value", "_measurement"])
             df["_time"] = pd.to_datetime(
@@ -120,7 +122,29 @@ def parse_influxdb_csv(filepath: str) -> dict:
             df = df.dropna(subset=["_time", "_value"])
             all_dfs.append(df)
         except Exception:
-            continue
+            pass
+        pending_header_lines = None
+        pending_data_rows = []
+
+    for block in blocks:
+        lines = block.strip().split("\n")
+        header_idx = None
+        for j, line in enumerate(lines):
+            if "_time" in line and "_value" in line:
+                header_idx = j
+                break
+
+        if header_idx is not None:
+            _flush()
+            pending_header_lines = lines[header_idx:]
+            pending_data_rows = []
+        elif pending_header_lines is not None:
+            for line in lines:
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    pending_data_rows.append(line)
+
+    _flush()
 
     if not all_dfs:
         print(f"ERROR: Could not parse any data from {filepath}", file=sys.stderr)
