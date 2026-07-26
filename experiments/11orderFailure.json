@@ -1,0 +1,17 @@
+{
+  "experiments": [
+    {
+      "testName": "Silent kill order",
+      "description": "Silently kills the order service after two minutes by pinning CPU usage to 100%",
+      "gatlingConfig": [
+        {
+          "loadScript": "gatling/realisticBuyProcess.kt",
+          "userSteps": "gatling/realistic10-600s.csv"
+        }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/order.json",
+      "globalConfig": "global/warmup50-60s.json"
+    }
+  ]
+}
