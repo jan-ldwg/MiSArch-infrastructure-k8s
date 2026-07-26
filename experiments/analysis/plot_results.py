@@ -94,39 +94,65 @@ ENDPOINT_NAMES = {
 
 
 def parse_influxdb_csv(filepath: str) -> dict:
-    """Parse InfluxDB annotated CSV — handles row-per-line format from Jan's export."""
-    with open(filepath, "rb") as f:
-        content = f.read().decode("utf-8")
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
 
-    lines = content.splitlines()
-    data_lines = []
-    header = None
+    blocks = content.strip().split("\n\n")
+    all_dfs = []
+    pending_header_lines = None
+    pending_data_rows = []
 
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if ",result," in line or line.startswith(",result,"):
-            if header is None:
-                header = line
-            continue
-        if header and line.startswith(",,"):
-            data_lines.append(line)
+    def _flush():
+        nonlocal pending_header_lines, pending_data_rows
+        if pending_header_lines is None:
+            return
+        all_lines = pending_header_lines + pending_data_rows
+        if len(all_lines) <= 1:
+            pending_header_lines = None
+            pending_data_rows = []
+            return
+        try:
+            df = pd.read_csv(io.StringIO("\n".join(all_lines)))
+            df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
+            df = df.dropna(subset=["_time", "_value", "_measurement"])
+            df["_time"] = pd.to_datetime(
+                df["_time"], utc=True, errors="coerce"
+            ).dt.tz_convert(None)
+            df["_value"] = pd.to_numeric(df["_value"], errors="coerce")
+            df = df.dropna(subset=["_time", "_value"])
+            all_dfs.append(df)
+        except Exception:
+            pass
+        pending_header_lines = None
+        pending_data_rows = []
 
-    if not header or not data_lines:
-        print(f"ERROR: Could not parse data from {filepath}", file=sys.stderr)
+    for block in blocks:
+        lines = block.strip().split("\n")
+        header_idx = None
+        for j, line in enumerate(lines):
+            if "_time" in line and "_value" in line:
+                header_idx = j
+                break
+
+        if header_idx is not None:
+            _flush()
+            pending_header_lines = lines[header_idx:]
+            pending_data_rows = []
+        elif pending_header_lines is not None:
+            for line in lines:
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    pending_data_rows.append(line)
+
+    _flush()
+
+    if not all_dfs:
+        print(f"ERROR: Could not parse any data from {filepath}", file=sys.stderr)
         sys.exit(1)
 
-    df = pd.read_csv(io.StringIO(header + "\n" + "\n".join(data_lines)))
-    df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
-    df["_time"] = pd.to_datetime(
-        df["_time"], utc=True, errors="coerce", format="mixed"
-    ).dt.tz_convert(None)
-    df["_value"] = pd.to_numeric(df["_value"], errors="coerce")
-    df = df.dropna(subset=["_time", "_value", "_measurement"])
-
+    combined = pd.concat(all_dfs, ignore_index=True)
     result = {}
-    for meas, group in df.groupby("_measurement"):
+    for meas, group in combined.groupby("_measurement"):
         result[meas] = group.copy().sort_values("_time").reset_index(drop=True)
     return result
 
@@ -206,29 +232,22 @@ def plot_timeseries(data_list, labels, output_path):
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=30, ha="right", color=TEXT)
 
-    # Panel 2: Responses ok/ko stacked (first run)
+    # Panel 2: Responses ok/ko line plot (first run)
     ax = axes[2]
     style_ax(ax, f"Responses (ok/ko) — {labels[0]}")
     if "responses" in data_list[0]:
         df = data_list[0]["responses"]
-        flavor_col = "flavor" if "flavor" in df.columns else "scenario"
         pivoted = df.pivot_table(
-            index="_time", columns=flavor_col, values="_value", aggfunc="sum"
+            index="_time", columns="flavor", values="_value", aggfunc="sum"
         )
         pivoted = pivoted.reindex(columns=["ok", "ko"]).fillna(0)
         time = pivoted.index
 
-        ax.fill_between(
-            time, 0, pivoted["ok"], color=COLORS[0], alpha=0.6, label="OK", linewidth=0
+        ax.plot(
+            time, pivoted["ok"], color=COLORS[0], linewidth=2, label="OK"
         )
-        ax.fill_between(
-            time,
-            pivoted["ok"],
-            pivoted["ok"] + pivoted["ko"],
-            color=COLOR_KO,
-            alpha=0.6,
-            label="KO",
-            linewidth=0,
+        ax.plot(
+            time, pivoted["ko"], color=COLOR_KO, linewidth=2, label="KO"
         )
     ax.legend(fontsize=8, facecolor=PANEL, labelcolor=TEXT)
     ax.set_ylabel("Responses / interval", color=TEXT, fontsize=8)
@@ -241,8 +260,7 @@ def plot_timeseries(data_list, labels, output_path):
     for i, (data, label) in enumerate(zip(data_list, labels)):
         if "responses" in data:
             df = data["responses"]
-            flavor_col = "flavor" if "flavor" in df.columns else "scenario"
-            ko = df[df[flavor_col] == "ko"]
+            ko = df[df["flavor"] == "ko"]
             if not ko.empty:
                 ax.plot(
                     ko["_time"],
@@ -489,6 +507,7 @@ def main():
     parser.add_argument("--output", "-o", default="timeseries.png")
     parser.add_argument("--output-dir", default=".")
     parser.add_argument("--all", action="store_true", help="Generate all dashboards")
+    parser.add_argument("--text-only", action="store_true", help="Print summary table only, skip all graph generation")
     args = parser.parse_args()
 
     labels = args.labels if args.labels else [Path(f).stem for f in args.files]
@@ -510,21 +529,22 @@ def main():
 
     print_summary(data_list, labels)
 
-    out_dir = Path(args.output_dir)
-    stem = Path(args.output).stem
+    if not args.text_only:
+        out_dir = Path(args.output_dir)
+        stem = Path(args.output).stem
 
-    print("Generating time series dashboard...")
-    plot_timeseries(data_list, labels, out_dir / f"{stem}_timeseries.png")
+        print("Generating time series dashboard...")
+        plot_timeseries(data_list, labels, out_dir / f"{stem}_timeseries.png")
 
-    if args.all:
-        print("Generating response time summary...")
-        plot_response_times(data_list, labels, out_dir / f"{stem}_response_times.png")
+        if args.all:
+            print("Generating response time summary...")
+            plot_response_times(data_list, labels, out_dir / f"{stem}_response_times.png")
 
-        print("Generating request counts dashboard...")
-        plot_request_counts(data_list, labels, out_dir / f"{stem}_request_counts.png")
+            print("Generating request counts dashboard...")
+            plot_request_counts(data_list, labels, out_dir / f"{stem}_request_counts.png")
 
-        print("Generating percentile overview...")
-        plot_percentile_table(data_list, labels, out_dir / f"{stem}_percentiles.png")
+            print("Generating percentile overview...")
+            plot_percentile_table(data_list, labels, out_dir / f"{stem}_percentiles.png")
 
     print("\nDone!")
 
