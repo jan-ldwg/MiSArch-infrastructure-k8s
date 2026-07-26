@@ -1,0 +1,44 @@
+{
+  "title": "Kill keycloak",
+  "description": "Kills one keycloak pod after 2 minutes",
+  "steady-state-hypothesis": {
+    "title": "keycloak deployment healthy",
+    "probes": [
+      {
+        "type": "probe",
+        "name": "keycloak pods running",
+        "tolerance": true,
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.probes",
+          "func": "deployment_available_and_healthy",
+          "arguments": {
+            "name": "keycloak",
+            "ns": "misarch"
+          }
+        }
+      }
+    ]
+  },
+  "method": [
+    {
+      "type": "action",
+      "name": "Kill one keycloak pod under load",
+      "provider": {
+        "type": "python",
+        "module": "chaosk8s.pod.actions",
+        "func": "terminate_pods",
+        "arguments": {
+          "label_selector": "app.kubernetes.io/name=keycloak",
+          "ns": "misarch",
+          "mode": "fixed",
+          "qty": 1,
+          "grace_period": 0
+        }
+      },
+      "pauses": {
+        "before": 120
+      }
+    }
+  ]
+}

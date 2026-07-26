@@ -187,7 +187,7 @@ def graphql_query(cluster_url: str, tokens, query, variables=None):
         return send_request(tokens["access_token"])
 
 def export_influxdb_to_csv(e_id: str, e_version: str, output_path: str):
-	token = read_terraform_output("influxdb_admin_token")
+	token = "lrAZg1ta7oHXn81bTBjEdxWvPPefnxvA"
 	with InfluxDBClient(url=INFLUX_URL, token=token, org=INFLUX_ORG) as client:
 		query = f'from(bucket:"{INFLUX_BUCKET}") |> range(start: 0) |> filter(fn:(r) => r.testUUID == "{e_id}")'
 		try:
@@ -525,7 +525,7 @@ def main():
 		print(f"Terraform global_domain: {cluster_url}")
 	except RuntimeError as e:
 		print(f"Warning: could not read Terraform global_domain: {e}", file=sys.stderr)
-		cluster_url = None
+		cluster_url = "http://35.198.157.206"
 
 	port_forward_processes = start_port_forwards(PORT_FORWARDS)
 	if not port_forward_processes:
@@ -554,7 +554,7 @@ def main():
 				e_id, e_version = run_experiment(experiment)
 				end_time=datetime.datetime.now()
 
-				experiment_path = os.path.join(results_path, f"{e_id}:{e_version}")
+				experiment_path = os.path.join(results_path, f"{e_id}_{e_version}")
 				copy_experiment_files(path, experiment, experiment_path)
 				with open(os.path.join(experiment_path, "git.json"), 'x') as f:
 					json.dump(git_info, f, indent=2)

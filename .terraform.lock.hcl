@@ -6,6 +6,7 @@ provider "registry.terraform.io/alekc/kubectl" {
   constraints = "~> 2.1"
   hashes = [
     "h1:pDnerh94NFiSv5z/Vuq+c1mEdn117P9KQI8zXeEEAEI=",
+    "h1:vRUWsup24DPkw3dDEQzg+FdW782KGOUfmmkUugFvMwU=",
     "zh:00a27c51a6f1082f20cbee52e0b996e4bed1dbc90de682cc309618aee2857e35",
     "zh:16f94d63152a8a7c637fa3c609a104416272565b7a9b620e3b895ddb9912e288",
     "zh:18a5c663c2aa6e673d75650d27888f1f91894f46d504fbf4a87f045c96f7afc1",
@@ -27,6 +28,7 @@ provider "registry.terraform.io/hashicorp/google" {
   constraints = "~> 6.0"
   hashes = [
     "h1:79CwMTsp3Ud1nOl5hFS5mxQHyT0fGVye7pqpU0PPlHI=",
+    "h1:DNt2+WSTnrNlWVUml87IQb+f/aICd3TKETxWIJAELyA=",
     "zh:1f3513fcfcbf7ca53d667a168c5067a4dd91a4d4cccd19743e248ff31065503c",
     "zh:3da7db8fc2c51a77dd958ea8baaa05c29cd7f829bd8941c26e2ea9cb3aadc1e5",
     "zh:3e09ac3f6ca8111cbb659d38c251771829f4347ab159a12db195e211c76068bb",
@@ -46,6 +48,7 @@ provider "registry.terraform.io/hashicorp/helm" {
   version = "3.2.0"
   hashes = [
     "h1:3WcDkgmMy9vTO6hSMzqI7o4nNeSa5AXDENxk6WphT6w=",
+    "h1:ad8XdNRv+trfXgmu0tdI1YeFp7WSO5g9PI3QFOxRR8Y=",
     "zh:2f1d55bf4e6a9c2629dfd3b162a05632f2e251bf6083d8613f38af3d51cea553",
     "zh:33b378f15d39c2050a9272f6d5e8437f162972c93244af6df6de54ba2b0a416c",
     "zh:501d7e7b3d42f5b40a6e5e979d5a6a4d67eba0fb37d786e2c3d7186e742dd557",
@@ -65,6 +68,7 @@ provider "registry.terraform.io/hashicorp/helm" {
 provider "registry.terraform.io/hashicorp/kubernetes" {
   version = "3.2.0"
   hashes = [
+    "h1:0rX4RXNq0jqXm0yMzrtZd/1W9QrDO0EOC+zkfDNxAfQ=",
     "h1:GR25uehNLXO2Qqxc5eC5FB61+isLyMqnivZ1lsdq0f8=",
     "zh:2e33acc20154d96ce5b3ab6d5fa0407403759a0852c63276baed0bbef4dbf1d4",
     "zh:38721fee7fa1857414942040291d930b3c3f2a979845a2ff66289a73ad9f17ff",
@@ -86,6 +90,7 @@ provider "registry.terraform.io/hashicorp/random" {
   version = "3.9.0"
   hashes = [
     "h1:OO+IuvQJSPmWdN8AyyIEvPJbLvDQpgX/zbktoa9KsJE=",
+    "h1:q/uaUTBdKgAmZESrwsoeDQff9uUA/cI/N5ZKNgVwa9c=",
     "zh:161ad0bd9a75768c82f53fb6e7172a9d8be2d4889b012645a34795031aaf1bf1",
     "zh:19dc9a5b17729725ccfc4f45b0500af0ee5bc6b6b160c7adb8f2bf617d2c80ea",
     "zh:269eda8fe42daa7974d5a34d166c3ba9defe80cde86c01e4dadcfdf2e1f05e5f",

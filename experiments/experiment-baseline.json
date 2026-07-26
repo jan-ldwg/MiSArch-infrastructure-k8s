@@ -1,0 +1,14 @@
+{
+  "experiments": [
+    {
+      "testName": "Baseline - No Chaos",
+      "description": "Baseline run with no fault injections",
+      "gatlingConfig": [
+        { "loadScript": "gatling/realisticBuyProcess.kt", "userSteps": "gatling/realistic10-600s.csv" }
+      ],
+      "chaosConfig": "chaos/none.json",
+      "misarchConfig": "misarch/none.json",
+      "globalConfig": "global/warmup50-60s.json"
+    }
+  ]
+}
