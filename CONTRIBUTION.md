@@ -27,11 +27,14 @@
 - extended visualization script to include all endpoints
 - debugged jaeger deployment
 - added tracing to order service
-- run initial experiments with different work scripts and load levels
+- ran initial experiments with different work scripts and load levels
+- investigated HPA
+- added REPRODUCTION.md
 
 ## Maryam
 
 - python script to visualize test results
+- added and conducted replica experiment
 
 ## Maxim Strzebkowski
 
