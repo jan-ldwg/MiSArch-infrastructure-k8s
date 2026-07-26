@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "misarch-terraform-state"
+    bucket = "misarch-terraform-state-group04"
     prefix = "misarch/cluster"
   }
   required_providers {
