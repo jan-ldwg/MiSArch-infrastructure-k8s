@@ -30,6 +30,7 @@
 - ran initial experiments with different work scripts and load levels
 - investigated HPA
 - added REPRODUCTION.md
+- recorded video
 
 ## Maryam
 

@@ -44,6 +44,16 @@ terraform version
 gcloud version
 ```
 
+The experiment script also requires kubectl and Python.
+
+```sh
+kubectl version
+```
+
+```sh
+python3 -V
+```
+
 You also need the gke-auth-plugin
 
 ```sh
@@ -102,7 +112,14 @@ When this is done, you can now access the store web page under the IP-address ou
 
 # Running an experiment
 
-Open a new terminal in the project root. Run the python script. The only argument needed is the filename of the experiment configuration you want to use. For more details see `experiments/README.md`.
+Open a new terminal in the project root. The experiments require kubectl to forward ports. Therefore, make sure that the credentials for the cluster are available to kubectl by running:
+
+```sh
+gcloud container clusters get-credentials misarch-cluster \
+  --zone europe-west3-a
+```
+
+Run the python script. The only argument needed is the filename of the experiment configuration you want to use. For more details see `experiments/README.md`.
 
 ```sh
 python3 experiments/runner/main.py --file="04realisticBaselineLow.json"
