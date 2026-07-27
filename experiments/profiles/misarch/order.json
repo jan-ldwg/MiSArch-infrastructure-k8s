@@ -1,0 +1,22 @@
+[
+  {
+    "failures": [
+      {
+        "name": "order",
+        "pubSubDeterioration": null,
+        "serviceInvocationDeterioration": [],
+        "artificialMemoryUsage": null,
+        "artificialCPUUsage": [
+          {
+            "usageDuration": 1000,
+            "pauseDuration": ""
+          }
+        ]
+      }
+    ],
+    "pauses": {
+      "before": 120,
+      "after": 300
+    }
+  }
+]

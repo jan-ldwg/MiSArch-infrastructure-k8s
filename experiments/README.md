@@ -5,7 +5,7 @@ To ensure that experiments can be run in a repeatable way, the complete process 
 You can start the script by running from the root of the project. The only argument is the file with the experiment config you want to run.
 
 ```sh
-python3 experiments/runner/main.py --config = "experiments.json"
+python3 experiments/runner/main.py --file="experiments.json"
 ```
 
 ## The experiment config file

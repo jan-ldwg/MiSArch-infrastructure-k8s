@@ -40,6 +40,7 @@ resource "helm_release" "misarch_inventory_db" {
   name       = local.inventory_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -95,6 +96,7 @@ resource "helm_release" "misarch_invoice_db" {
   name       = local.invoice_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -121,9 +123,9 @@ resource "kubernetes_secret" "mongodb_credentials_invoice" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_invoice.result
-    "mongodb-passwords"         = random_password.misarch_invoice_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_invoice.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_invoice.result
+    "mongodb-passwords"       = random_password.misarch_invoice_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_invoice.result
   }
 }
 
@@ -133,6 +135,7 @@ resource "helm_release" "misarch_media_db" {
   name       = local.media_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -159,9 +162,9 @@ resource "kubernetes_secret" "mongodb_credentials_media" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_media.result
-    "mongodb-passwords"         = random_password.misarch_media_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_media.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_media.result
+    "mongodb-passwords"       = random_password.misarch_media_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_media.result
   }
 }
 
@@ -171,6 +174,7 @@ resource "helm_release" "misarch_order_db" {
   name       = local.order_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -197,9 +201,9 @@ resource "kubernetes_secret" "mongodb_credentials_order" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_order.result
-    "mongodb-passwords"         = random_password.misarch_order_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_order.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_order.result
+    "mongodb-passwords"       = random_password.misarch_order_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_order.result
   }
 }
 
@@ -209,6 +213,7 @@ resource "helm_release" "misarch_payment_db" {
   name       = local.payment_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -235,9 +240,9 @@ resource "kubernetes_secret" "mongodb_credentials_payment" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_payment.result
-    "mongodb-passwords"         = random_password.misarch_payment_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_payment.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_payment.result
+    "mongodb-passwords"       = random_password.misarch_payment_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_payment.result
   }
 }
 
@@ -247,6 +252,7 @@ resource "helm_release" "misarch_review_db" {
   name       = local.review_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -273,9 +279,9 @@ resource "kubernetes_secret" "mongodb_credentials_review" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_review.result
-    "mongodb-passwords"         = random_password.misarch_review_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_review.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_review.result
+    "mongodb-passwords"       = random_password.misarch_review_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_review.result
   }
 }
 
@@ -285,6 +291,7 @@ resource "helm_release" "misarch_shoppingcart_db" {
   name       = local.shoppingcart_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -311,9 +318,9 @@ resource "kubernetes_secret" "mongodb_credentials_shoppingcart" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_shoppingcart.result
-    "mongodb-passwords"         = random_password.misarch_shoppingcart_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_shoppingcart.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_shoppingcart.result
+    "mongodb-passwords"       = random_password.misarch_shoppingcart_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_shoppingcart.result
   }
 }
 
@@ -323,6 +330,7 @@ resource "helm_release" "misarch_wishlist_db" {
   name       = local.wishlist_db_service_name
   repository = "https://groundhog2k.github.io/helm-charts/"
   chart      = "mongodb"
+  version    = "0.7.11"
   namespace  = local.namespace
 
   values = [
@@ -349,8 +357,8 @@ resource "kubernetes_secret" "mongodb_credentials_wishlist" {
   }
 
   data = {
-    "mongodb-root-password"     = random_password.mongodb_root_password_wishlist.result
-    "mongodb-passwords"         = random_password.misarch_wishlist_db_password.result
-    "mongodb-replica-set-key"   = random_password.mongodb_replica_set_key_wishlist.result
+    "mongodb-root-password"   = random_password.mongodb_root_password_wishlist.result
+    "mongodb-passwords"       = random_password.misarch_wishlist_db_password.result
+    "mongodb-replica-set-key" = random_password.mongodb_replica_set_key_wishlist.result
   }
 }
